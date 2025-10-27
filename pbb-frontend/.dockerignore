@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.DS_Store
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+coverage
+.vscode
+
+# Exclude large static content - will be mounted as volumes
+public/pbb_book_pages
+public/pbb_book_thumbnails

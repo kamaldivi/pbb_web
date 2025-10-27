@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  pbb-frontend:
+    build:
+      context: ./pbb-frontend
+      dockerfile: Dockerfile
+    container_name: pbb-frontend
+    restart: unless-stopped
+    volumes:
+      # Mount static content from host (read-only for security)
+      - ./pbb-frontend/public/pbb_book_pages:/usr/share/nginx/html/pbb_book_pages:ro
+      - ./pbb-frontend/public/pbb_book_thumbnails:/usr/share/nginx/html/pbb_book_thumbnails:ro
+    networks:
+      - pbb-network
+
+  nginx-ssl:
+    image: nginx:alpine
+    container_name: nginx-ssl
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - pbb-frontend
+    networks:
+      - pbb-network
+
+networks:
+  pbb-network:
+    name: purebhakti_shared_network
+    external: true

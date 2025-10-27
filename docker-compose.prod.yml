@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  pbb-frontend:
+    build:
+      context: ./pbb-frontend
+      dockerfile: Dockerfile
+    container_name: pbb-frontend-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Mount static content directory from host (read-only for security)
+      # Contains: pbb_book_pages/, pbb_book_thumbnails/, etc.
+      - /opt/pbb_static_content/pbb_book_pages:/usr/share/nginx/html/pbb_book_pages:ro
+      - /opt/pbb_static_content/pbb_book_thumbnails:/usr/share/nginx/html/pbb_book_thumbnails:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 10s
+      interval: 30s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    networks:
+      - pbb-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx-ssl:
+    image: nginx:alpine
+    container_name: nginx-ssl-prod
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
+      - ~/pbb-certs/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      pbb-frontend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    networks:
+      - pbb-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 5s
+      interval: 30s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+networks:
+  pbb-network:
+    name: purebhakti_shared_network
+    external: true
