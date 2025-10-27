@@ -1,6 +1,6 @@
-# PureBhakti Base Test Bed
+# Pure Bhakti Base Web Application
 
-A comprehensive web application for browsing and reading spiritual texts from the PureBhakti Base collection. This project provides a beautiful, responsive interface for accessing Sanskrit and spiritual literature with support for transliterated text and high-quality book page images.
+A comprehensive web application for browsing and reading spiritual texts from the Pure Bhakti Base collection. This project provides a beautiful, responsive interface for accessing Sanskrit and spiritual literature with support for transliterated text, high-quality book page images, and an immersive reading experience.
 
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
@@ -10,10 +10,19 @@ A comprehensive web application for browsing and reading spiritual texts from th
 
 ## ✨ Features
 
-### 📚 Book Management
+### 📚 Book Management & Navigation
 - **Smart Book Selection**: Intuitive book browser with search functionality
 - **Alphabetical Grouping**: Intelligent grouping that combines English and transliterated Sanskrit characters (Ś, Ḍ, Ū, etc.) under their base letters
 - **Multi-format Support**: Handles various book title formats and metadata
+- **Book Summaries**: Rich book information with author details and descriptions
+- **Direct Navigation**: Select books from Home Page and navigate directly to reading mode
+
+### 🎯 Immersive Reading Mode
+- **Anchor-Style Focus**: Auto-scroll to reading view when selecting books or navigating pages
+- **Distraction-Free Reading**: Focused view with Book Reader and Table of Contents
+- **Top Navigation Tab**: Fixed side button to return to full layout view
+- **Smooth Transitions**: Beautiful scroll animations for seamless navigation
+- **Collapsible Panels**: Hide/show book selector and table of contents as needed
 
 ### 🔤 Sanskrit & Transliteration Support
 - **Advanced Character Normalization**: Books starting with "Śrī" group under "S", "Ḍāmodara" under "D"
@@ -24,13 +33,27 @@ A comprehensive web application for browsing and reading spiritual texts from th
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
 - **Glass Morphism**: Beautiful backdrop blur effects and modern styling
 - **Smooth Animations**: Elegant transitions and hover effects
-- **Dark/Light Theme Ready**: CSS variables for easy theme switching
+- **Consistent Layout**: Centered max-width design with unified styling
+- **Enhanced Footer**: Logo, vision/mission statements, and licensing information
 
 ### 🖼️ Book Reading Experience
 - **High-Quality Images**: WebP format for optimized loading
-- **Page Navigation**: Intuitive page selector with preview
-- **Content Display**: Support for both text content and page images
+- **Dual Page Navigation**: Control panels above and below page viewer for convenience
+- **Table of Contents**: Interactive TOC with current page highlighting
+- **Page-by-Page Navigation**: Previous/Next buttons with automatic reading mode focus
 - **Loading States**: Smooth loading spinners and error handling
+- **Image Viewer**: Optimized display with proper aspect ratios
+
+### 🔍 Search & Discovery
+- **Glossary Search**: Search spiritual terminology and concepts (POST-based API)
+- **Verse Lookup**: Find specific verses across books
+- **Book Search**: Search across entire book collection
+- **Advanced Filtering**: Filter by book, author, or category
+
+### 💬 Interactive Features
+- **Chat Interface**: AI-powered conversations about spiritual texts
+- **Video Tutorial**: Integrated tutorial link in navigation menu
+- **Multi-page Support**: Browse through complete books page by page
 
 ## 🏗️ Architecture
 
@@ -39,19 +62,39 @@ A comprehensive web application for browsing and reading spiritual texts from th
 pbb-frontend/
 ├── src/
 │   ├── components/
-│   │   ├── BookSlider.jsx      # Smart book selection with grouping
-│   │   ├── PageSelector.jsx    # Page navigation component
-│   │   ├── ContentDisplay.jsx  # Book content viewer
-│   │   ├── ImageViewer.jsx     # Optimized image display
-│   │   ├── LoadingSpinner.jsx  # Loading states
-│   │   └── ErrorMessage.jsx    # Error handling
+│   │   ├── layout/
+│   │   │   ├── Header.jsx           # App header with logo
+│   │   │   ├── Footer.jsx           # Footer with vision/mission/licensing
+│   │   │   ├── Navigation.jsx       # Main menu with Tutorial link
+│   │   │   └── Layout.jsx           # Consistent page wrapper
+│   │   ├── shared/
+│   │   │   ├── BookSelector.jsx     # Reusable book selection
+│   │   │   ├── LoadingSpinner.jsx   # Loading states
+│   │   │   └── ErrorMessage.jsx     # Error handling
+│   │   ├── book/
+│   │   │   └── BookSlider.jsx       # Book carousel
+│   │   ├── reader/
+│   │   │   ├── PageNavigation.jsx   # Page controls with Prev/Next
+│   │   │   ├── ImageViewer.jsx      # Page image display
+│   │   │   ├── TableOfContents.jsx  # Interactive TOC
+│   │   │   └── ContentDisplay.jsx   # Text content viewer
+│   │   └── search/
+│   │       ├── GlossarySearchInput.jsx    # Glossary search
+│   │       └── GlossaryResultCard.jsx     # Search results
+│   ├── pages/
+│   │   ├── HomePage.jsx             # Library overview
+│   │   ├── BookReaderPage.jsx       # Reading mode with anchor navigation
+│   │   ├── GlossarySearchPage.jsx   # Glossary search
+│   │   ├── VerseLookupPage.jsx      # Verse search
+│   │   ├── ChatPage.jsx             # AI chat
+│   │   └── BookSearchPage.jsx       # Book search
 │   ├── services/
-│   │   └── api.js             # API service layer
-│   └── App.jsx                # Main application
+│   │   └── api.js                   # API service layer
+│   ├── router.jsx                   # Route configuration
+│   └── main.jsx                     # App entry point
 ├── public/
-│   ├── images/                # Static images
-│   └── pbb_book_pages/       # Book page assets
-└── Dockerfile                # Multi-stage production build
+│   └── images/                      # Static images and logos
+└── Dockerfile                       # Multi-stage production build
 ```
 
 ### Infrastructure
@@ -71,8 +114,8 @@ pbb-frontend/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/kamaldivi/pbb_test_bed.git
-   cd pbb_test_bed
+   git clone git@github.com:kamaldivi/pbb_web.git
+   cd pbb_web
    ```
 
 2. **Start the application**
@@ -126,22 +169,25 @@ The production configuration includes:
 ## 📁 Project Structure
 
 ```
-pbb_test_bed/
+pbb_web/
 ├── pbb-frontend/              # React application
-│   ├── src/                   # Source code
-│   ├── public/                # Static assets
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── pages/             # Page-level components
+│   │   ├── services/          # API integration
+│   │   └── router.jsx         # Route configuration
+│   ├── public/
+│   │   └── images/            # Static assets and logos
 │   ├── dist/                  # Production build
 │   └── Dockerfile             # Frontend container
 ├── nginx/                     # Nginx configurations
 │   └── nginx-ssl.conf         # SSL-enabled config
-├── ssl/                       # SSL certificates
-│   ├── purebhaktibase.com.crt
-│   ├── purebhaktibase.com.key
-│   └── trusted/               # Certificate chain
+├── ssl/                       # SSL certificates (if configured)
 ├── certbot/                   # Let's Encrypt automation
 ├── docker-compose.yml         # Development environment
 ├── docker-compose.prod.yml    # Production environment
-└── README.md                  # This file
+├── README.md                  # This file
+└── PROJECT_STRUCTURE.md       # Detailed architecture guide
 ```
 
 ## 🔧 Configuration
@@ -160,15 +206,44 @@ The application includes production-ready SSL configuration:
 - **CSP**: Content Security Policy for enhanced security
 
 ### API Integration
-The frontend integrates with a PureBhakti Base API:
+The frontend integrates with a Pure Bhakti Base API:
 ```javascript
 // API Endpoints
-GET /api/v1/books                    # List all books
-GET /api/v1/books/{id}/pages/core    # Get book pages
-GET /api/v1/books/{id}/content/{page} # Get page content
+GET  /api/v1/books                     # List all books
+GET  /api/v1/books/{id}/toc            # Get table of contents
+GET  /api/v1/books/{id}/pages          # Get book pages
+POST /api/v1/glossary/search           # Search glossary terms
+GET  /api/v1/verses                    # Verse lookup
+POST /api/v1/chat                      # AI chat interactions
 ```
 
 ## 🎯 Key Features Deep Dive
+
+### Anchor-Style Reading Mode
+The BookReaderPage features an immersive reading experience with automatic focus:
+
+**Auto-Scroll Triggers:**
+- When book selected from Home Page (via URL parameter)
+- When book selected from Top Book Selection Panel
+- When navigating pages using Previous/Next buttons
+
+**Reading Mode Behavior:**
+- Smoothly scrolls to Book Reader + Table of Contents view
+- Hides header, navigation, and book selector from view
+- Maximizes reading space with distraction-free layout
+- Shows "Top" side tab for easy return to full layout
+
+**Implementation:**
+```javascript
+// Scroll to reading mode with smooth animation
+const scrollToReadingMode = () => {
+  readerAnchorRef.current.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+  setShowTopTab(true);
+};
+```
 
 ### Smart Alphabetical Grouping
 The application features intelligent character normalization for Sanskrit texts:
@@ -264,13 +339,23 @@ This project is part of the PureBhakti Base spiritual literature collection.
 
 ## 🙏 Acknowledgments
 
-- **PureBhakti Base**: For providing the spiritual texts and content
+- **Pure Bhakti Base**: For providing the spiritual texts and content
+- **Gaudiya Vedanta Publications**: For book content (CC BY-ND 3.0 license)
+- **Gokul Bhajan Gaudiya Matha**: For supporting this spiritual technology initiative
 - **React Community**: For the excellent development framework
 - **Vite**: For lightning-fast build tooling
 - **Tailwind CSS**: For beautiful, responsive styling
 
+## 📜 License
+
+- **Books & Content**: Licensed under CC BY-ND 3.0 by Gaudiya Vedanta Publications
+- **Software**: Rights reserved by Gokul Bhajan Gaudiya Matha
+- **Permissions**: [purebhakti.com/pluslicense](http://purebhakti.com/pluslicense) | gvp.contactus@gmail.com
+
 ---
 
 **Generated with ❤️ using Claude Code**
+
+Repository: [github.com/kamaldivi/pbb_web](https://github.com/kamaldivi/pbb_web)
 
 For support or questions, please open an issue in the GitHub repository.
