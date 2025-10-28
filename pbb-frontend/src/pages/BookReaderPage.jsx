@@ -5,6 +5,7 @@ import BookSelector from '../components/shared/BookSelector';
 import TableOfContents from '../components/reader/TableOfContents';
 import PageNavigation from '../components/reader/PageNavigation';
 import ImageViewer from '../components/reader/ImageViewer';
+import BookmarkButton from '../components/bookmark/BookmarkButton';
 
 const BookReaderPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,9 +41,10 @@ const BookReaderPage = () => {
     loadBooks();
   }, []);
 
-  // Handle book_id from URL parameter (e.g., /reader?book_id=123)
+  // Handle book_id and page from URL parameters (e.g., /reader?book_id=123&page=5)
   useEffect(() => {
     const bookIdFromUrl = searchParams.get('book_id');
+    const pageFromUrl = searchParams.get('page');
 
     if (bookIdFromUrl && books.length > 0 && !selectedBook) {
       // Find the book in the loaded books list
@@ -58,7 +60,16 @@ const BookReaderPage = () => {
         };
         setSelectedBook(bookWithId);
         setBookSelectorCollapsed(true); // Auto-collapse book selector
-        // Scroll to reading mode when book is selected from URL (e.g., from home page)
+
+        // If page parameter exists, set it after pages are loaded
+        if (pageFromUrl) {
+          const pageNum = parseInt(pageFromUrl, 10);
+          if (!isNaN(pageNum)) {
+            setCurrentPage(pageNum);
+          }
+        }
+
+        // Scroll to reading mode when book is selected from URL (e.g., from home page or bookmarks)
         setTimeout(() => scrollToReadingMode(), 500);
       }
     }
@@ -122,10 +133,21 @@ const BookReaderPage = () => {
       setPages(pagesArray);
       setTotalPages(pagesData?.total || pagesArray.length);
 
-      // Always default to page 1 when a book is selected
-      // User can navigate using forward/previous buttons or TOC
-      if (pagesArray && pagesArray.length > 0) {
-        // Find the first page in the array (may not be page_number 1)
+      // Check if there's a page parameter in the URL
+      const pageFromUrl = searchParams.get('page');
+
+      if (pageFromUrl) {
+        // If page parameter exists, use it
+        const pageNum = parseInt(pageFromUrl, 10);
+        if (!isNaN(pageNum)) {
+          setCurrentPage(pageNum);
+        } else {
+          // Fallback to first page if invalid
+          const firstPage = pagesArray[0]?.page_number || 1;
+          setCurrentPage(firstPage);
+        }
+      } else if (pagesArray && pagesArray.length > 0 && !currentPage) {
+        // Only set default page if no page is currently set and no URL param
         const firstPage = pagesArray[0]?.page_number || 1;
         setCurrentPage(firstPage);
       }
@@ -392,14 +414,28 @@ const BookReaderPage = () => {
             {/* Debug Info */}
             {console.log('PageNavigation render check - currentPage:', currentPage, 'totalPages:', totalPages, 'condition:', !!(currentPage && totalPages > 0))}
 
-            {/* Top Page Navigation Controls */}
+            {/* Top Page Navigation Controls + Bookmark Button */}
             {currentPage && totalPages > 0 && (
-              <PageNavigation
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-              />
+              <div className="space-y-4">
+                <PageNavigation
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                />
+
+                {/* Bookmark Button */}
+                <div className="flex justify-center">
+                  <BookmarkButton
+                    bookId={selectedBook?.id}
+                    bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                    pageNumber={currentPage}
+                    onBookmarkChange={(data) => {
+                      console.log('Bookmark changed:', data);
+                    }}
+                  />
+                </div>
+              </div>
             )}
 
             {/* Show warning if navigation should appear but doesn't */}

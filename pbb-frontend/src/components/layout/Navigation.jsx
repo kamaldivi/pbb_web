@@ -6,6 +6,7 @@ const Navigation = () => {
   const menuItems = [
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/reader', label: 'Reader', icon: '📖' },
+    { path: '/bookmarks', label: 'Bookmarks', icon: '🔖' },
     { path: '/search', label: 'Search', icon: '🔍' },
     { path: '/glossary', label: 'Glossary', icon: '📚' },
     { path: '/verses', label: 'Verse Lookup', icon: '📜' },

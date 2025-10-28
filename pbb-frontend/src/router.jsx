@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import BookReaderPage from './pages/BookReaderPage';
+import BookmarksPage from './pages/BookmarksPage';
 import BookSearchPage from './pages/BookSearchPage';
 import GlossarySearchPage from './pages/GlossarySearchPage';
 import VerseLookupPage from './pages/VerseLookupPage';
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
       {
         path: 'reader',
         element: <BookReaderPage />,
+      },
+      {
+        path: 'bookmarks',
+        element: <BookmarksPage />,
       },
       {
         path: 'search',
