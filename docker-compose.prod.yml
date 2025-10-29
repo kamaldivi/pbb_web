@@ -14,6 +14,7 @@ services:
       # Contains: pbb_book_pages/, pbb_book_thumbnails/, etc.
       - /opt/pbb_static_content/pbb_book_pages:/usr/share/nginx/html/pbb_book_pages:ro
       - /opt/pbb_static_content/pbb_book_thumbnails:/usr/share/nginx/html/pbb_book_thumbnails:ro
+      - frontend-logs:/var/log/nginx
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       timeout: 10s
@@ -46,6 +47,8 @@ services:
     volumes:
       - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
       - ~/pbb-certs/letsencrypt:/etc/letsencrypt:ro
+      - nginx-ssl-logs:/var/log/nginx
+    entrypoint: /bin/sh -c "rm -f /var/log/nginx/access.log /var/log/nginx/error.log && touch /var/log/nginx/access.log /var/log/nginx/error.log && exec nginx -g 'daemon off;'"
     depends_on:
       pbb-frontend:
         condition: service_healthy
@@ -71,7 +74,39 @@ services:
         max-file: "3"
 
 
+  goaccess:
+    image: nginx:alpine
+    container_name: pbb-goaccess-prod
+    restart: always
+    ports:
+      - "7890:80"
+    volumes:
+      - ./goaccess:/usr/share/nginx/html:ro
+    networks:
+      - pbb-network
+
+  goaccess-generator:
+    image: allinurl/goaccess:latest
+    container_name: pbb-goaccess-generator
+    restart: always
+    volumes:
+      - nginx-ssl-logs:/logs/nginx-ssl:ro
+      - ./goaccess:/report
+    entrypoint: /bin/sh
+    command: -c "while true; do if [ -f /logs/nginx-ssl/access.log ] && [ -s /logs/nginx-ssl/access.log ]; then goaccess /logs/nginx-ssl/access.log -o /report/index.html --log-format=COMBINED --html-report-title='Pure Bhakti Base Analytics'; else echo '<html><body><h1>No logs yet. Please visit the website to generate traffic.</h1></body></html>' > /report/index.html; fi; sleep 60; done"
+    networks:
+      - pbb-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   pbb-network:
     name: purebhakti_shared_network
     external: true
+
+volumes:
+  frontend-logs:
+  nginx-ssl-logs:

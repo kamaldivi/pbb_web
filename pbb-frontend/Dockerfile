@@ -18,6 +18,11 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Remove default log symlinks and create actual log files
+RUN rm -f /var/log/nginx/access.log /var/log/nginx/error.log && \
+    touch /var/log/nginx/access.log /var/log/nginx/error.log && \
+    chown nginx:nginx /var/log/nginx/access.log /var/log/nginx/error.log
+
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
