@@ -2,7 +2,7 @@ import { useState } from 'react';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import ErrorMessage from '../shared/ErrorMessage';
 
-const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRetry }) => {
+const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRetry, onCollapse }) => {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
 
   if (loading) {
@@ -144,11 +144,18 @@ const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRet
       {/* Header */}
       <div className="bg-gradient-to-r from-amber-100/80 to-yellow-100/80 backdrop-blur-sm px-4 py-3 border-b border-amber-200/50">
         <div className="flex items-center space-x-3">
-          <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          </div>
+          {/* Collapse Button */}
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              className="w-6 h-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
+              title="Hide Table of Contents"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+              </svg>
+            </button>
+          )}
           <h3 className="text-sm font-bold text-slate-800">Table of Contents</h3>
         </div>
       </div>

@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, useImperativeHandle, forwardRef } from 'react';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
-const ImageViewer = ({ bookId, pageNumber, pageLabel, totalPages, onPageChange }) => {
+const ImageViewer = forwardRef(({ bookId, pageNumber, pageLabel, totalPages, onPageChange }, ref) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+
+  // Expose toggleFullscreen method to parent via ref
+  useImperativeHandle(ref, () => ({
+    toggleFullscreen: () => {
+      setFullscreen(prev => !prev);
+    }
+  }));
 
   if (!bookId || !pageNumber) {
     return (
@@ -58,36 +65,7 @@ const ImageViewer = ({ bookId, pageNumber, pageLabel, totalPages, onPageChange }
   return (
     <>
       <div className="w-full bg-white rounded-lg shadow-md overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-50 to-gray-50 px-3 py-3 border-b border-gray-200 relative">
-          <div className="flex items-center justify-center">
-            {/* Center-aligned Page Information */}
-            <h3 className="text-base font-bold text-slate-800 text-center">
-              {pageLabel || `Page ${pageNumber}`}
-              {totalPages && (
-                <span className="text-sm font-medium text-slate-600 ml-2">
-                  (Page {pageNumber} of {totalPages})
-                </span>
-              )}
-            </h3>
-
-            {/* Fullscreen Button - Top Right Corner */}
-            <button
-              onClick={toggleFullscreen}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-110 group"
-              title="View fullscreen"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-              </svg>
-              <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                Fullscreen
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Image Container */}
+        {/* Image Container - No Header */}
         <div className="relative bg-gray-100 flex items-center justify-center p-4">
           {imageLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -186,6 +164,8 @@ const ImageViewer = ({ bookId, pageNumber, pageLabel, totalPages, onPageChange }
       )}
     </>
   );
-};
+});
+
+ImageViewer.displayName = 'ImageViewer';
 
 export default ImageViewer;

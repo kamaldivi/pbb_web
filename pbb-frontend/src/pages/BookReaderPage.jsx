@@ -12,6 +12,8 @@ const BookReaderPage = () => {
 
   // Ref for reading mode anchor
   const readerAnchorRef = useRef(null);
+  // Ref for ImageViewer to control fullscreen
+  const imageViewerRef = useRef(null);
 
   // State management
   const [books, setBooks] = useState([]);
@@ -178,7 +180,11 @@ const BookReaderPage = () => {
     };
     setSelectedBook(bookWithId);
 
-    // Update URL parameter to reflect new selection
+    // Reset current page when selecting a new book
+    // (will be set to page 1 when pages load, unless URL has page param)
+    setCurrentPage(null);
+
+    // Update URL parameter to reflect new selection (without page param)
     setSearchParams({ book_id: bookWithId.id });
 
     // Scroll to reading mode after book selection
@@ -211,80 +217,44 @@ const BookReaderPage = () => {
       <section className="relative">
         {/* Book Selector Content */}
         <div
-          className={`transition-all duration-300 overflow-hidden ${
-            bookSelectorCollapsed ? 'max-h-0 opacity-0' : 'max-h-[600px] opacity-100'
+          className={`transition-all duration-300 ${
+            bookSelectorCollapsed ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-[600px] opacity-100 overflow-visible'
           }`}
         >
-          <div className="relative">
-            <BookSelector
-              books={books}
-              loading={booksLoading}
-              error={booksError}
-              selectedBooks={selectedBook}
-              onBookSelect={handleBookSelect}
-              multiSelect={false}
-              showSearch={true}
-              showAlphabet={true}
-              onRetry={handleRetryBooks}
-            />
-            {/* Collapse Toggle Button - Top Right Corner Inside Panel */}
-            {selectedBook && !bookSelectorCollapsed && (
-              <button
-                onClick={() => setBookSelectorCollapsed(true)}
-                className="absolute top-4 right-4 bg-violet-600 hover:bg-violet-700 text-white p-2.5 rounded-lg shadow-lg transition-all duration-200 hover:scale-110 group"
-                title="Hide book selector"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Hide Selector
-                </span>
-              </button>
-            )}
-          </div>
+          <BookSelector
+            books={books}
+            loading={booksLoading}
+            error={booksError}
+            selectedBooks={selectedBook}
+            onBookSelect={handleBookSelect}
+            multiSelect={false}
+            showSearch={true}
+            showAlphabet={true}
+            onRetry={handleRetryBooks}
+            onCollapse={selectedBook ? () => setBookSelectorCollapsed(true) : null}
+          />
         </div>
 
         {/* Collapsed State - Show Selected Book */}
         {bookSelectorCollapsed && selectedBook && (
-          <div className="relative bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-300 rounded-2xl p-4 shadow-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-600 font-medium">Currently Selected</p>
-                  <h3 className="text-lg font-bold text-slate-800">
-                    {selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                  </h3>
-                </div>
-              </div>
+          <div className="relative bg-gradient-to-r from-violet-50 to-purple-50 border border-white/20 rounded-2xl p-4 shadow-xl">
+            <div className="flex items-center space-x-3">
               {/* Expand Button */}
               <button
                 onClick={() => setBookSelectorCollapsed(false)}
-                className="bg-violet-600 hover:bg-violet-700 text-white p-2.5 rounded-lg shadow-lg transition-all duration-200 hover:scale-110 group"
+                className="w-6 h-6 bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
                 title="Show book selector"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Show Selector
-                </span>
               </button>
+              <div>
+                <p className="text-xs text-slate-600 font-medium">Currently Selected</p>
+                <h3 className="text-lg font-bold text-slate-800">
+                  {selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                </h3>
+              </div>
             </div>
           </div>
         )}
@@ -333,64 +303,40 @@ const BookReaderPage = () => {
         <section className="flex gap-6 relative">
           {/* Left Column: Table of Contents - Collapsible */}
           <div
-            className={`transition-all duration-300 relative ${
-              tocCollapsed ? 'w-0 min-w-0 opacity-0' : 'w-[30%] min-w-[300px] opacity-100'
+            className={`transition-all duration-300 relative flex-shrink-0 ${
+              tocCollapsed ? 'w-auto' : 'w-[30%] min-w-[300px]'
             }`}
-            style={{ overflow: tocCollapsed ? 'hidden' : 'visible' }}
           >
-            <TableOfContents
-              toc={toc}
-              loading={tocLoading}
-              error={tocError}
-              onPageSelect={handleTocPageSelect}
-              currentPage={currentPage}
-              onRetry={handleRetryToc}
-            />
-            {/* TOC Hide Button - Top Right Corner Inside TOC Panel */}
+            {/* TOC Expanded State */}
             {!tocCollapsed && (
-              <button
-                onClick={() => setTocCollapsed(true)}
-                className="absolute top-2 right-4 z-20 bg-amber-600 hover:bg-amber-700 text-white p-2.5 rounded-lg shadow-lg transition-all duration-200 hover:scale-110 group"
-                title="Hide Table of Contents"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Hide TOC
-                </span>
-              </button>
+              <TableOfContents
+                toc={toc}
+                loading={tocLoading}
+                error={tocError}
+                onPageSelect={handleTocPageSelect}
+                currentPage={currentPage}
+                onRetry={handleRetryToc}
+                onCollapse={() => setTocCollapsed(true)}
+              />
             )}
-          </div>
 
-          {/* Right Column: Page Navigation + Image Viewer - Expands when TOC collapsed */}
-          <div
-            className={`flex flex-col transition-all duration-300 relative ${
-              tocCollapsed ? 'w-full' : 'w-[70%]'
-            }`}
-          >
-            {/* TOC Show Button - When Collapsed (Vertical Tab) */}
+            {/* TOC Collapsed State - Vertical Tab */}
             {tocCollapsed && (
-              <div className="absolute top-0 left-0 z-20 h-full flex items-start pt-20">
+              <div className="h-full flex items-start pt-0">
                 <button
                   onClick={() => setTocCollapsed(false)}
                   className="bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 border-2 border-amber-300 hover:border-amber-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
                   title="Show Table of Contents"
                 >
                   {/* Icon */}
-                  <div className="bg-amber-600 hover:bg-amber-700 text-white p-2 rounded-lg mb-2 transition-colors">
+                  <div className="w-6 h-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg mb-2 transition-colors flex items-center justify-center flex-shrink-0">
                     <svg
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                     </svg>
                   </div>
 
@@ -411,21 +357,20 @@ const BookReaderPage = () => {
                 </button>
               </div>
             )}
-            {/* Debug Info */}
-            {console.log('PageNavigation render check - currentPage:', currentPage, 'totalPages:', totalPages, 'condition:', !!(currentPage && totalPages > 0))}
+          </div>
 
-            {/* Top Page Navigation Controls + Bookmark Button */}
+          {/* Right Column: Page Navigation + Image Viewer */}
+          <div className="flex flex-col flex-1 relative">
+            {/* Ultra-Compact Navigation Bar (TOP) */}
             {currentPage && totalPages > 0 && (
-              <div className="space-y-4">
-                <PageNavigation
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                />
-
-                {/* Bookmark Button */}
-                <div className="flex justify-center">
+              <PageNavigation
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                pages={pages}
+                bookmarkButton={
                   <BookmarkButton
                     bookId={selectedBook?.id}
                     bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
@@ -433,36 +378,70 @@ const BookReaderPage = () => {
                     onBookmarkChange={(data) => {
                       console.log('Bookmark changed:', data);
                     }}
+                    compactMode={true}
                   />
-                </div>
-              </div>
+                }
+                fullscreenButton={
+                  <button
+                    onClick={() => {
+                      imageViewerRef.current?.toggleFullscreen();
+                    }}
+                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                    title="View fullscreen"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                    </svg>
+                  </button>
+                }
+              />
             )}
 
-            {/* Show warning if navigation should appear but doesn't */}
-            {!currentPage || totalPages === 0 ? (
-              <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-                ⚠️ Debug: currentPage={JSON.stringify(currentPage)}, totalPages={totalPages}
-              </div>
-            ) : null}
-
-            {/* Page Image Viewer */}
-            <div className="flex-1">
+            {/* Page Image Viewer (No Header) */}
+            <div className="flex-1 image-viewer-container mb-4">
               <ImageViewer
+                ref={imageViewerRef}
                 bookId={selectedBook?.id}
                 pageNumber={currentPage}
-                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label || `Page ${currentPage}`}
+                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
               />
             </div>
 
-            {/* Bottom Page Navigation Controls - Repeat for convenience */}
+            {/* Ultra-Compact Navigation Bar (BOTTOM - REPEAT) */}
             {currentPage && totalPages > 0 && (
               <PageNavigation
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
+                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
                 bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                pages={pages}
+                bookmarkButton={
+                  <BookmarkButton
+                    bookId={selectedBook?.id}
+                    bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                    pageNumber={currentPage}
+                    onBookmarkChange={(data) => {
+                      console.log('Bookmark changed:', data);
+                    }}
+                    compactMode={true}
+                  />
+                }
+                fullscreenButton={
+                  <button
+                    onClick={() => {
+                      imageViewerRef.current?.toggleFullscreen();
+                    }}
+                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                    title="View fullscreen"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                    </svg>
+                  </button>
+                }
               />
             )}
           </div>
