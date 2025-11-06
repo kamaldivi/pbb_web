@@ -11,7 +11,7 @@ const Navigation = () => {
     { path: '/glossary', label: 'Glossary', icon: '📚' },
     { path: '/verses', label: 'Verse Lookup', icon: '📜' },
     { path: '/chat', label: 'Chat', icon: '💬' },
-    { path: 'https://youtu.be/Au9ktfvwG44', label: 'Tutorial', icon: '🎥', external: true },
+    { path: 'https://youtu.be/P9PzwAzbRuE', label: 'Tutorial', icon: '🎥', external: true },
     // { path: '/testbed', label: 'Test Bed', icon: '🧪' },
   ];
 

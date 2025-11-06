@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import BookSelector from '../components/shared/BookSelector';
 import TableOfContents from '../components/reader/TableOfContents';
@@ -213,9 +213,9 @@ const BookReaderPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Book Selector - Collapsible */}
+      {/* Book Selector - Collapsible - COMMENTED OUT FOR FUTURE USE */}
+      {/*
       <section className="relative">
-        {/* Book Selector Content */}
         <div
           className={`transition-all duration-300 ${
             bookSelectorCollapsed ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-[600px] opacity-100 overflow-visible'
@@ -235,11 +235,9 @@ const BookReaderPage = () => {
           />
         </div>
 
-        {/* Collapsed State - Show Selected Book */}
         {bookSelectorCollapsed && selectedBook && (
           <div className="relative bg-gradient-to-r from-violet-50 to-purple-50 border border-white/20 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center space-x-3">
-              {/* Expand Button */}
               <button
                 onClick={() => setBookSelectorCollapsed(false)}
                 className="w-6 h-6 bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
@@ -259,6 +257,7 @@ const BookReaderPage = () => {
           </div>
         )}
       </section>
+      */}
 
       {/* Reading Mode Anchor Point */}
       <div ref={readerAnchorRef} className="scroll-mt-4"></div>
@@ -325,11 +324,11 @@ const BookReaderPage = () => {
               <div className="h-full flex items-start pt-0">
                 <button
                   onClick={() => setTocCollapsed(false)}
-                  className="bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 border-2 border-amber-300 hover:border-amber-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
+                  className="bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 border-2 border-blue-300 hover:border-blue-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
                   title="Show Table of Contents"
                 >
                   {/* Icon */}
-                  <div className="w-6 h-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg mb-2 transition-colors flex items-center justify-center flex-shrink-0">
+                  <div className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg mb-2 transition-colors flex items-center justify-center flex-shrink-0">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -342,10 +341,10 @@ const BookReaderPage = () => {
 
                   {/* Vertical Text */}
                   <div className="flex flex-col items-center">
-                    <svg className="w-5 h-5 text-amber-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                     </svg>
-                    <div className="writing-mode-vertical text-xs font-bold text-amber-800 tracking-wider" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+                    <div className="writing-mode-vertical text-xs font-bold text-blue-800 tracking-wider" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
                       TABLE OF CONTENTS
                     </div>
                   </div>
@@ -369,6 +368,7 @@ const BookReaderPage = () => {
                 onPageChange={handlePageChange}
                 pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
                 bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                bookId={selectedBook?.id}
                 pages={pages}
                 bookmarkButton={
                   <BookmarkButton
@@ -386,10 +386,11 @@ const BookReaderPage = () => {
                     onClick={() => {
                       imageViewerRef.current?.toggleFullscreen();
                     }}
-                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                    data-tooltip="Fullscreen"
+                    className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
                     title="View fullscreen"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
                     </svg>
                   </button>
@@ -417,6 +418,7 @@ const BookReaderPage = () => {
                 onPageChange={handlePageChange}
                 pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
                 bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                bookId={selectedBook?.id}
                 pages={pages}
                 bookmarkButton={
                   <BookmarkButton
@@ -434,10 +436,11 @@ const BookReaderPage = () => {
                     onClick={() => {
                       imageViewerRef.current?.toggleFullscreen();
                     }}
-                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                    data-tooltip="Fullscreen"
+                    className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
                     title="View fullscreen"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
                     </svg>
                   </button>
@@ -454,9 +457,18 @@ const BookReaderPage = () => {
           <div className="text-center">
             <div className="text-6xl mb-6">📖</div>
             <h2 className="text-2xl font-bold text-slate-800 mb-3">Book Reader</h2>
-            <p className="text-lg text-slate-600">
-              Select a book above to start reading
+            <p className="text-lg text-slate-600 mb-6">
+              Please select a book from the library to start reading
             </p>
+            <Link
+              to="/#library"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Browse Library
+            </Link>
           </div>
         </div>
       )}

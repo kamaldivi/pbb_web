@@ -131,15 +131,42 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
   if (compactMode) {
     return (
       <>
+        <style>{`
+          .bookmark-tooltip {
+            position: relative;
+          }
+          .bookmark-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background-color: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 1000;
+          }
+          .bookmark-tooltip:hover::after {
+            opacity: 1;
+          }
+        `}</style>
         <div className="relative flex items-center gap-1">
           {/* Bookmark Toggle Icon */}
           <button
             onClick={handleQuickBookmark}
             disabled={isProcessing}
+            data-tooltip={isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'}
             className={`
-              p-2 rounded-lg transition-all duration-200
+              bookmark-tooltip p-2 rounded-lg transition-all duration-200
               ${isBookmarked
-                ? 'text-amber-600 hover:bg-amber-50'
+                ? 'text-blue-600 hover:bg-blue-50'
                 : 'text-slate-400 hover:bg-slate-100'
               }
               disabled:opacity-50 disabled:cursor-not-allowed
@@ -147,7 +174,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
             title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
           >
             <svg
-              className={`w-5 h-5 ${isBookmarked ? 'fill-current' : 'fill-none'}`}
+              className={`w-6 h-6 ${isBookmarked ? 'fill-current' : 'fill-none'}`}
               stroke="currentColor"
               strokeWidth={2}
               viewBox="0 0 24 24"
@@ -166,10 +193,11 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               ref={buttonRef}
               onClick={handleBookmarkWithName}
               disabled={isProcessing}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              data-tooltip="Edit Bookmark"
+              className="bookmark-tooltip p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Edit bookmark name"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -192,14 +220,14 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
             {/* Custom Name Dropdown (fixed positioning to escape stacking context) */}
             <div
               ref={dropdownRef}
-              className="fixed w-80 bg-white rounded-xl shadow-2xl border-2 border-amber-200 p-5 z-[9999]"
+              className="fixed w-80 bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-5 z-[9999]"
               style={{
                 top: `${dropdownPosition.top}px`,
                 left: `${dropdownPosition.left}px`
               }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
                     <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
@@ -225,7 +253,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="e.g., Important verse, Key concept..."
-                  className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-amber-500 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
                   maxLength={100}
                   autoFocus
                   onKeyDown={(e) => {
@@ -252,7 +280,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                 <button
                   onClick={handleSaveWithName}
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50"
                 >
                   {isProcessing ? 'Saving...' : 'Save'}
                 </button>
@@ -279,8 +307,8 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
             disabled:opacity-50 disabled:cursor-not-allowed
             ${
               isBookmarked
-                ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                : 'bg-white hover:bg-amber-50 text-slate-700 border-2 border-amber-300'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-white hover:bg-blue-50 text-slate-700 border-2 border-blue-300'
             }
           `}
           title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
@@ -355,7 +383,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
                   <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
@@ -381,7 +409,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="e.g., Important verse, Key concept..."
-                className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-amber-500 focus:outline-none transition-colors"
+                className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
                 maxLength={100}
                 autoFocus
                 onKeyDown={(e) => {
@@ -408,7 +436,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               <button
                 onClick={handleSaveWithName}
                 disabled={isProcessing}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50"
               >
                 {isProcessing ? 'Saving...' : 'Save'}
               </button>

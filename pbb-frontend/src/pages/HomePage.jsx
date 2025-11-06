@@ -1,21 +1,56 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService } from '../services/api';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBookForSummary, setSelectedBookForSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('books'); // 'books' or 'magazines'
+
+  // Initialize activeTab from URL parameter or default to 'english'
+  const getInitialTab = () => {
+    const tabParam = searchParams.get('tab');
+    const validTabs = ['english', 'tamil', 'rays'];
+    return validTabs.includes(tabParam) ? tabParam : 'english';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadBooks();
+
+    // Handle return from reader - if return_tab is in URL, set it as the active tab
+    const returnTab = searchParams.get('return_tab');
+    if (returnTab && ['english', 'tamil', 'rays'].includes(returnTab)) {
+      setSearchParams({ tab: returnTab }, { replace: true });
+    } else if (!searchParams.get('tab')) {
+      // If no tab parameter exists, set default to english
+      setSearchParams({ tab: 'english' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync activeTab with URL parameter changes (handles browser back/forward)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const validTabs = ['english', 'tamil', 'rays'];
+
+    if (tabParam && validTabs.includes(tabParam)) {
+      if (tabParam !== activeTab) {
+        setActiveTab(tabParam);
+        setSearchTerm(''); // Clear search when tab changes via URL
+      }
+    } else if (tabParam && !validTabs.includes(tabParam)) {
+      // Invalid tab in URL, redirect to default
+      setSearchParams({ tab: 'english' }, { replace: true });
+    }
+  }, [searchParams, activeTab, setSearchParams]);
 
   const loadBooks = async () => {
     try {
@@ -38,7 +73,8 @@ const HomePage = () => {
 
   const handleBookClick = (book) => {
     const bookId = book.id || book._id || book.book_id;
-    navigate(`/reader?book_id=${bookId}`);
+    // Navigate to reader and preserve current tab in URL for when user returns
+    navigate(`/reader?book_id=${bookId}&return_tab=${activeTab}`);
   };
 
   const handleShowSummary = async (e, book) => {
@@ -50,73 +86,65 @@ const HomePage = () => {
     setSelectedBookForSummary(null);
   };
 
+  const handleDownloadPDF = (book) => {
+    if (!book.pdf_name) return;
+
+    const pdfUrl = `/pbb_pdf_files/${book.pdf_name}`;
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = book.pdf_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearchTerm(''); // Clear search when switching tabs
+    // Update URL to reflect tab change
+    setSearchParams({ tab }, { replace: false });
   };
 
-  // Filter books based on search term
-  const filteredBooks = books.filter(book => {
+  // Group books by type
+  const booksByType = {
+    english: books.filter(book => book.book_type === 'english'),
+    tamil: books.filter(book => book.book_type === 'tamil'),
+    rays: books.filter(book => book.book_type === 'rays'),
+  };
+
+  // Filter books for current tab based on search term (scoped to active tab)
+  const filteredBooks = booksByType[activeTab]?.filter(book => {
     const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
     return bookTitle.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  }) || [];
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-slate-800 mb-4">
-            Welcome to Pure Bhakti Base
-          </h1>
-          <p className="text-lg text-slate-600 mb-8">
-            Your gateway to the divine teachings of Śrīla Bhaktivedānta Nārāyaṇa Gosvāmī Mahārāja
-          </p>
-
-          {/* Quick Action Cards - Clickable */}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            {/* Reader Card */}
-            <button
-              onClick={() => navigate('/reader')}
-              className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all duration-200 hover:scale-105 group"
-            >
-              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">📖</div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Book Reader</h3>
-              <p className="text-slate-600">
-                Browse and read from our collection of sacred texts
-              </p>
-            </button>
-            {/* Search Card */}
-            <button
-              onClick={() => navigate('/search')}
-              className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl transition-all duration-200 hover:scale-105 group"
-            >
-              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🔍</div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Search</h3>
-              <p className="text-slate-600">
-                Find specific teachings and verses across all books
-              </p>
-            </button>
-
-            {/* AI Chat Card */}
-            <button
-              onClick={() => navigate('/chat')}
-              className="p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl border-2 border-green-200 hover:border-green-400 hover:shadow-xl transition-all duration-200 hover:scale-105 group"
-            >
-              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">💬</div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">AI Chat</h3>
-              <p className="text-slate-600">
-                Engage in meaningful conversations with AI guidance
-              </p>
-            </button>
-
-            
+      {/* Announcement Block */}
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-400 rounded-xl shadow-lg p-6">
+        <div className="flex items-start space-x-4">
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl">
+              📙
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-slate-800">
+                New Addition to Library
+              </h3>
+              <span className="text-sm text-slate-600 font-medium">November 5, 2025</span>
+            </div>
+            <p className="text-slate-600 leading-relaxed">
+              <em>Rays of The Harmonist</em> magazines are now available in the Pure Bhakti Base Library.
+              Explore this collection of spiritual insights and teachings from the Rays of The Harmonist tab below.
+            </p>
           </div>
         </div>
       </div>
 
       {/* Library Section */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
+      <div id="library" className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
         <div className="flex items-center space-x-3 mb-6">
           <div className="text-4xl">📚</div>
           <h2 className="text-3xl font-bold text-slate-800">Library Collection</h2>
@@ -125,48 +153,67 @@ const HomePage = () => {
         {/* Tab Navigation */}
         <div className="flex items-center space-x-2 mb-6 border-b border-slate-200">
           <button
-            onClick={() => handleTabChange('books')}
+            onClick={() => handleTabChange('english')}
             className={`px-6 py-3 font-semibold transition-all duration-200 border-b-2 ${
-              activeTab === 'books'
+              activeTab === 'english'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
-            Books
+            📘 English Books
             {!loading && (
               <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                activeTab === 'books' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+                activeTab === 'english' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
               }`}>
-                {books.length}
+                {booksByType.english.length}
               </span>
             )}
           </button>
           <button
-            onClick={() => handleTabChange('magazines')}
+            onClick={() => handleTabChange('tamil')}
             className={`px-6 py-3 font-semibold transition-all duration-200 border-b-2 ${
-              activeTab === 'magazines'
+              activeTab === 'tamil'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
-            Magazines
-            <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'magazines' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-            }`}>
-              0
-            </span>
+            📕 Tamil Books
+            {!loading && (
+              <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'tamil' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {booksByType.tamil.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange('rays')}
+            className={`px-6 py-3 font-semibold transition-all duration-200 border-b-2 ${
+              activeTab === 'rays'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
+            }`}
+          >
+            📙 Rays of The Harmonist
+            {!loading && (
+              <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'rays' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {booksByType.rays.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Books Tab Content */}
-        {activeTab === 'books' && (
+        {/* Tab Content - Renders for all book types */}
+        {(activeTab === 'english' || activeTab === 'tamil' || activeTab === 'rays') && (
           <>
-            {/* Search Box */}
+            {/* Search Box - Scoped to active tab */}
             <div className="mb-6">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search books by title..."
+                  placeholder={`Search ${activeTab === 'english' ? 'English Books' : activeTab === 'tamil' ? 'Tamil Books' : 'Rays of the Harmonist'} by title...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-3 pl-12 pr-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-slate-400"
@@ -220,6 +267,25 @@ const HomePage = () => {
               </div>
             )}
 
+            {/* Empty State - No books in this category */}
+            {!loading && !error && !searchTerm && filteredBooks.length === 0 && (
+              <div className="py-20 text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-slate-100 rounded-full mb-6">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                  {activeTab === 'english' ? 'English Books Coming Soon' :
+                   activeTab === 'tamil' ? 'Tamil Books Coming Soon' :
+                   'Rays of the Harmonist Coming Soon'}
+                </h3>
+                <p className="text-slate-600">
+                  We're working on adding books to this collection.
+                </p>
+              </div>
+            )}
+
             {/* Books Grid */}
             {!loading && !error && filteredBooks.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -235,7 +301,7 @@ const HomePage = () => {
                   className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer overflow-hidden border border-gray-200 group"
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-[3/4] bg-gradient-to-br from-amber-50 to-orange-50 relative overflow-hidden">
+                  <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
                     <img
                       src={thumbnailPath}
                       alt={bookTitle}
@@ -246,8 +312,8 @@ const HomePage = () => {
                         e.target.nextSibling.style.display = 'flex';
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-orange-100 hidden items-center justify-center">
-                      <svg className="w-16 h-16 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-100 hidden items-center justify-center">
+                      <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
@@ -276,21 +342,6 @@ const HomePage = () => {
             )}
           </>
         )}
-
-        {/* Magazines Tab Content */}
-        {activeTab === 'magazines' && (
-          <div className="py-20 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-6">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">Magazines Coming Soon</h3>
-            <p className="text-slate-600">
-              We're working on adding our collection of magazines to the library.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Book Summary Modal */}
@@ -298,7 +349,7 @@ const HomePage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={closeSummaryModal}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 relative">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 relative">
               <button
                 onClick={closeSummaryModal}
                 className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
@@ -357,6 +408,14 @@ const HomePage = () => {
               >
                 Close
               </button>
+              {selectedBookForSummary.pdf_name && (
+                <button
+                  onClick={() => handleDownloadPDF(selectedBookForSummary)}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-md"
+                >
+                  Download PDF
+                </button>
+              )}
               <button
                 onClick={() => {
                   closeSummaryModal();

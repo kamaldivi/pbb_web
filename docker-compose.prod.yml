@@ -11,9 +11,10 @@ services:
       - NODE_ENV=production
     volumes:
       # Mount static content directory from host (read-only for security)
-      # Contains: pbb_book_pages/, pbb_book_thumbnails/, etc.
+      # Contains: pbb_book_pages/, pbb_book_thumbnails/, pbb_pdf_files/, etc.
       - /opt/pbb_static_content/pbb_book_pages:/usr/share/nginx/html/pbb_book_pages:ro
       - /opt/pbb_static_content/pbb_book_thumbnails:/usr/share/nginx/html/pbb_book_thumbnails:ro
+      - /opt/pbb_static_content/pbb_pdf_files:/usr/share/nginx/html/pbb_pdf_files:ro
       - frontend-logs:/var/log/nginx
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
@@ -46,6 +47,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
       - ~/pbb-certs/letsencrypt:/etc/letsencrypt:ro
       - nginx-ssl-logs:/var/log/nginx
     entrypoint: /bin/sh -c "rm -f /var/log/nginx/access.log /var/log/nginx/error.log && touch /var/log/nginx/access.log /var/log/nginx/error.log && exec nginx -g 'daemon off;'"
@@ -85,6 +87,36 @@ services:
     networks:
       - pbb-network
 
+  logrotate:
+    image: alpine:latest
+    container_name: pbb-logrotate
+    restart: always
+    volumes:
+      - nginx-ssl-logs:/var/log/nginx
+      - ./nginx/logrotate.conf:/etc/logrotate.d/nginx:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        apk add --no-cache logrotate docker-cli
+        echo "Logrotate service starting..."
+        while true; do
+          echo "$(date): Running logrotate..."
+          logrotate -v /etc/logrotate.d/nginx 2>&1
+          echo "$(date): Signaling nginx to reopen logs..."
+          docker exec nginx-ssl-prod nginx -s reopen 2>&1 || echo "Warning: Could not signal nginx"
+          echo "$(date): Logrotate completed, sleeping for 24 hours"
+          sleep 86400
+        done
+    networks:
+      - pbb-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   goaccess-generator:
     image: allinurl/goaccess:latest
     container_name: pbb-goaccess-generator
@@ -93,7 +125,52 @@ services:
       - nginx-ssl-logs:/logs/nginx-ssl:ro
       - ./goaccess:/report
     entrypoint: /bin/sh
-    command: -c "while true; do if [ -f /logs/nginx-ssl/access.log ] && [ -s /logs/nginx-ssl/access.log ]; then goaccess /logs/nginx-ssl/access.log -o /report/index.html --log-format=COMBINED --html-report-title='Pure Bhakti Base Analytics'; else echo '<html><body><h1>No logs yet. Please visit the website to generate traffic.</h1></body></html>' > /report/index.html; fi; sleep 60; done"
+    command:
+      - -c
+      - |
+        echo "GoAccess Generator starting..."
+        while true; do
+          # Build list of available log files (uncompressed only, newest first)
+          LOG_FILES=""
+
+          # Check for current log (highest priority)
+          if [ -f /logs/nginx-ssl/access.log ] && [ -s /logs/nginx-ssl/access.log ]; then
+            LOG_FILES="/logs/nginx-ssl/access.log"
+            echo "$(date): Found current log: access.log ($(wc -l < /logs/nginx-ssl/access.log) lines)"
+          fi
+
+          # Check for rotated logs
+          if [ -f /logs/nginx-ssl/access.log.1 ] && [ -s /logs/nginx-ssl/access.log.1 ]; then
+            LOG_FILES="$$LOG_FILES /logs/nginx-ssl/access.log.1"
+            echo "$(date): Found rotated log: access.log.1 ($(wc -l < /logs/nginx-ssl/access.log.1) lines)"
+          fi
+
+          # Generate report if we have any logs
+          if [ -n "$$LOG_FILES" ]; then
+            echo "$(date): Generating GoAccess report from:$$LOG_FILES"
+            goaccess $$LOG_FILES \
+              --log-format=COMBINED \
+              -o /report/index.html \
+              --html-report-title='Pure Bhakti Base Analytics (Last 30 Days)' \
+              --no-strict-status \
+              --ignore-crawlers \
+              --persist \
+              --restore \
+              --anonymize-ip 2>&1 | grep -v "^Cleaning" || true
+
+            if [ -f /report/index.html ] && [ -s /report/index.html ]; then
+              echo "$(date): Report generated successfully ($(wc -c < /report/index.html) bytes)"
+            else
+              echo "$(date): ERROR - Report generation failed"
+            fi
+          else
+            echo "$(date): No valid log files found - showing placeholder"
+            echo "<html><head><title>Pure Bhakti Base Analytics</title></head><body style='font-family:Arial;text-align:center;padding:50px;'><h1>Analytics Dashboard</h1><p>No log data available yet. The analytics will appear here once traffic is logged.</p><p style='color:#888;'>Last checked: $(date)</p></body></html>" > /report/index.html
+          fi
+
+          echo "$(date): Sleeping for 5 minutes..."
+          sleep 300
+        done
     networks:
       - pbb-network
     logging:

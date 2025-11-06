@@ -164,10 +164,10 @@ const BookmarksPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-50 to-slate-50 border-2 border-blue-300 rounded-2xl p-6 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24">
                 <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
@@ -221,7 +221,7 @@ const BookmarksPage = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by book title, page, or custom name..."
-                  className="w-full pl-10 pr-4 py-2 border-2 border-slate-300 rounded-lg focus:border-amber-500 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
                 />
                 <svg
                   className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"
@@ -245,7 +245,7 @@ const BookmarksPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-amber-500 focus:outline-none transition-colors"
+                className="px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -262,7 +262,7 @@ const BookmarksPage = () => {
           {filteredBookmarks.map((bookmark) => (
             <div
               key={bookmark.id}
-              className="bg-white rounded-xl shadow-md border-2 border-slate-200 hover:border-amber-400 transition-all duration-200 overflow-hidden group"
+              className="bg-white rounded-xl shadow-md border-2 border-slate-200 hover:border-blue-400 transition-all duration-200 overflow-hidden group"
             >
               <div className="p-5">
                 {/* Custom Name or Default Label */}
@@ -272,7 +272,7 @@ const BookmarksPage = () => {
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full px-3 py-1 border-2 border-amber-500 rounded-lg focus:outline-none"
+                      className="w-full px-3 py-1 border-2 border-blue-500 rounded-lg focus:outline-none"
                       autoFocus
                       maxLength={100}
                       onKeyDown={(e) => {
@@ -302,7 +302,7 @@ const BookmarksPage = () => {
                     </h3>
                     <button
                       onClick={() => handleStartEdit(bookmark)}
-                      className="p-1 text-slate-400 hover:text-amber-600 transition-colors"
+                      className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
                       title="Edit name"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -335,7 +335,7 @@ const BookmarksPage = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleNavigateToBookmark(bookmark)}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
                   >
                     Open
                   </button>
@@ -376,7 +376,7 @@ const BookmarksPage = () => {
           </p>
           <button
             onClick={() => navigate('/reader')}
-            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl"
           >
             Go to Reader
           </button>

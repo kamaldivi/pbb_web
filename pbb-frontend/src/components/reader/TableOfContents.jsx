@@ -140,15 +140,15 @@ const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRet
   const tocTree = buildTree(toc.table_of_contents);
 
   return (
-    <div className="w-full bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 backdrop-blur-sm rounded-2xl shadow-xl border border-amber-200/50 overflow-hidden">
+    <div className="w-full bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-100/80 to-yellow-100/80 backdrop-blur-sm px-4 py-3 border-b border-amber-200/50">
+      <div className="bg-gradient-to-r from-blue-100/80 to-slate-100/80 backdrop-blur-sm px-4 py-3 border-b border-blue-200/50">
         <div className="flex items-center space-x-3">
           {/* Collapse Button */}
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="w-6 h-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
+              className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
               title="Hide Table of Contents"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

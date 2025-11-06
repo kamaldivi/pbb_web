@@ -19,7 +19,7 @@ const Header = () => {
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 bg-clip-text text-transparent">
                 Pure Bhakti Base
               </h1>
               <p className="text-sm text-slate-600 font-medium">Unlocking the Eternal Teachings of Yugācārya Śrīla Bhaktivedānta Nārāyaṇa Gosvāmī Mahārāja</p>
