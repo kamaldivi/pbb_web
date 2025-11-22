@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const PageNavigation = ({
   currentPage,
@@ -12,6 +13,8 @@ const PageNavigation = ({
   pages = [],  // Array of page objects with page_number and page_label
   bookId  // Add bookId for URL generation
 }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showGoToDialog, setShowGoToDialog] = useState(false);
   const [goToInput, setGoToInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -190,6 +193,11 @@ const PageNavigation = ({
     setShowShareMenu(false);
   };
 
+  const handleBackToLibrary = () => {
+    const returnTab = searchParams.get('return_tab') || 'english';
+    navigate(`/?tab=${returnTab}#library`);
+  };
+
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === totalPages;
 
@@ -226,10 +234,22 @@ const PageNavigation = ({
           opacity: 1;
         }
       `}</style>
-      <div className="bg-gradient-to-r from-slate-50/90 via-gray-50/80 to-slate-50/90 backdrop-blur-sm rounded-xl shadow-md border border-slate-200/50 px-4 py-2.5 mb-3">
+      <div className="bg-white rounded-xl shadow-md border border-slate-200 px-4 py-2.5 mb-3">
         <div className="flex items-center justify-between gap-3">
-          {/* Left: Share + Bookmark Buttons */}
+          {/* Left: Library + Share + Bookmark Buttons */}
           <div className="flex items-center gap-2">
+            {/* Back to Library Button */}
+            <button
+              onClick={handleBackToLibrary}
+              data-tooltip="Back to Library"
+              className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+              title="Back to library"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </button>
+
             {/* Share Button */}
             <button
               ref={shareButtonRef}

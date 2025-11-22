@@ -26,14 +26,14 @@ const Header = () => {
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-4">
-            <div className="w-30 h-30 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+            <div className="w-30 h-30 rounded-lg overflow-hidden border border-slate-300 shadow-lg">
               <img
-                src="/images/gurudev.jpg"
-                alt="Gurudev"
+                src="/images/gurudeva.JPG"
+                alt="Gurudeva"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="w-30 h-30 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+            <div className="w-30 h-30 rounded-lg overflow-hidden border border-slate-300 shadow-lg">
               <img
                 src="/images/radha_krishna_sevakunj.png"
                 alt="Radha Krishna"

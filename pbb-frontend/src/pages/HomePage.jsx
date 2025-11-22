@@ -108,8 +108,14 @@ const HomePage = () => {
   // Group books by type
   const booksByType = {
     english: books.filter(book => book.book_type === 'english'),
-    tamil: books.filter(book => book.book_type === 'tamil'),
+    tamil: books.filter(book => book.book_type?.startsWith('tamil')),
     rays: books.filter(book => book.book_type === 'rays'),
+  };
+
+  // Group Tamil books into sub-sections
+  const tamilSections = {
+    gurudev: books.filter(book => book.book_type === 'tamil-gurudev'),
+    gokulbhajan: books.filter(book => book.book_type === 'tamil-gokul-bhajan'),
   };
 
   // Filter books for current tab based on search term (scoped to active tab)
@@ -117,6 +123,18 @@ const HomePage = () => {
     const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
     return bookTitle.toLowerCase().includes(searchTerm.toLowerCase());
   }) || [];
+
+  // Filter Tamil sections based on search
+  const filteredTamilSections = {
+    gurudev: tamilSections.gurudev.filter(book => {
+      const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
+      return bookTitle.toLowerCase().includes(searchTerm.toLowerCase());
+    }),
+    gokulbhajan: tamilSections.gokulbhajan.filter(book => {
+      const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
+      return bookTitle.toLowerCase().includes(searchTerm.toLowerCase());
+    }),
+  };
 
   return (
     <div className="space-y-8">
@@ -133,18 +151,16 @@ const HomePage = () => {
               <h3 className="text-xl font-bold text-slate-800">
                 New Addition to Library
               </h3>
-              <span className="text-sm text-slate-600 font-medium">November 5, 2025</span>
+              <span className="text-sm text-slate-600 font-medium">November 15, 2025</span>
             </div>
-            <p className="text-slate-600 leading-relaxed">
-              <em>Rays of The Harmonist</em> magazines are now available in the Pure Bhakti Base Library.
-              Explore this collection of spiritual insights and teachings from the Rays of The Harmonist tab below.
+            <p className="text-slate-600 leading-relaxed"> Eight of Gurudev’s books have now been translated into Tamil and added to the Pure Bhakti Base Library. You can explore the full collection under the Tamil tab below.
             </p>
           </div>
         </div>
       </div>
 
       {/* Library Section */}
-      <div id="library" className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
+      <div id="library" className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
         <div className="flex items-center space-x-3 mb-6">
           <div className="text-4xl">📚</div>
           <h2 className="text-3xl font-bold text-slate-800">Library Collection</h2>
@@ -160,7 +176,7 @@ const HomePage = () => {
                 : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
-            📘 English Books
+            English Books
             {!loading && (
               <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                 activeTab === 'english' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
@@ -177,7 +193,7 @@ const HomePage = () => {
                 : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
-            📕 Tamil Books
+            Tamil Books
             {!loading && (
               <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                 activeTab === 'tamil' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
@@ -194,7 +210,7 @@ const HomePage = () => {
                 : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
-            📙 Rays of The Harmonist
+            Rays of The Harmonist
             {!loading && (
               <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                 activeTab === 'rays' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
@@ -286,57 +302,177 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Books Grid */}
-            {!loading && !error && filteredBooks.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {filteredBooks.map((book) => {
-              const bookId = book.id || book._id || book.book_id;
-              const bookTitle = book.original_book_title || book.english_book_title || book.title || `Book ${bookId}`;
-              const thumbnailPath = `/pbb_book_thumbnails/${bookId}.jpg`;
+            {/* Books Grid - Tamil tab with sections */}
+            {!loading && !error && activeTab === 'tamil' && filteredBooks.length > 0 && (
+              <div className="space-y-6">
+                {/* Gurudev's Books Section */}
+                {filteredTamilSections.gurudev.length > 0 && (
+                  <div>
+                    <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        Gurudev's Books
+                        <span className="ml-2 text-sm font-normal text-slate-600">
+                          ({filteredTamilSections.gurudev.length})
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                      {filteredTamilSections.gurudev.map((book) => {
+                        const bookId = book.id || book._id || book.book_id;
+                        const bookTitle = book.original_book_title || book.english_book_title || book.title || `Book ${bookId}`;
+                        const thumbnailPath = `/pbb_book_thumbnails/${bookId}.jpg`;
 
-              return (
-                <div
-                  key={bookId}
-                  onClick={() => handleBookClick(book)}
-                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer overflow-hidden border border-gray-200 group"
-                >
-                  {/* Thumbnail */}
-                  <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
-                    <img
-                      src={thumbnailPath}
-                      alt={bookTitle}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      onError={(e) => {
-                        // Fallback to gradient with book icon if image fails
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-100 hidden items-center justify-center">
-                      <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                        return (
+                          <div
+                            key={bookId}
+                            onClick={() => handleBookClick(book)}
+                            className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer overflow-hidden border border-gray-200 group"
+                          >
+                            <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
+                              <img
+                                src={thumbnailPath}
+                                alt={bookTitle}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-100 hidden items-center justify-center">
+                                <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="p-3">
+                              <h3 className="font-bold text-sm text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
+                                {bookTitle}
+                              </h3>
+                              <button
+                                onClick={(e) => handleShowSummary(e, book)}
+                                className="mt-2 w-full px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>View Details</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
+                )}
 
-                  {/* Book Info */}
-                  <div className="p-3">
-                    <h3 className="font-bold text-sm text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
-                      {bookTitle}
-                    </h3>
-                    {/* Info Button */}
-                    <button
-                      onClick={(e) => handleShowSummary(e, book)}
-                      className="mt-2 w-full px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>View Details</span>
-                    </button>
+                {/* Gokul Bhajan Books Section */}
+                {filteredTamilSections.gokulbhajan.length > 0 && (
+                  <div>
+                    <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        Gokul Bhajan Books
+                        <span className="ml-2 text-sm font-normal text-slate-600">
+                          ({filteredTamilSections.gokulbhajan.length})
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                      {filteredTamilSections.gokulbhajan.map((book) => {
+                        const bookId = book.id || book._id || book.book_id;
+                        const bookTitle = book.original_book_title || book.english_book_title || book.title || `Book ${bookId}`;
+                        const thumbnailPath = `/pbb_book_thumbnails/${bookId}.jpg`;
+
+                        return (
+                          <div
+                            key={bookId}
+                            onClick={() => handleBookClick(book)}
+                            className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer overflow-hidden border border-gray-200 group"
+                          >
+                            <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
+                              <img
+                                src={thumbnailPath}
+                                alt={bookTitle}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-100 hidden items-center justify-center">
+                                <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="p-3">
+                              <h3 className="font-bold text-sm text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
+                                {bookTitle}
+                              </h3>
+                              <button
+                                onClick={(e) => handleShowSummary(e, book)}
+                                className="mt-2 w-full px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>View Details</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
+                )}
+              </div>
+            )}
+
+            {/* Books Grid - English and Rays tabs (standard grid) */}
+            {!loading && !error && activeTab !== 'tamil' && filteredBooks.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {filteredBooks.map((book) => {
+                  const bookId = book.id || book._id || book.book_id;
+                  const bookTitle = book.original_book_title || book.english_book_title || book.title || `Book ${bookId}`;
+                  const thumbnailPath = `/pbb_book_thumbnails/${bookId}.jpg`;
+
+                  return (
+                    <div
+                      key={bookId}
+                      onClick={() => handleBookClick(book)}
+                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer overflow-hidden border border-gray-200 group"
+                    >
+                      <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
+                        <img
+                          src={thumbnailPath}
+                          alt={bookTitle}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-slate-100 hidden items-center justify-center">
+                          <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <h3 className="font-bold text-sm text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
+                          {bookTitle}
+                        </h3>
+                        <button
+                          onClick={(e) => handleShowSummary(e, book)}
+                          className="mt-2 w-full px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>View Details</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             )}

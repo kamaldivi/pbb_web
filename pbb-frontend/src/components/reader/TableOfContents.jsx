@@ -140,9 +140,9 @@ const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRet
   const tocTree = buildTree(toc.table_of_contents);
 
   return (
-    <div className="w-full bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
+    <div className="w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-100/80 to-slate-100/80 backdrop-blur-sm px-4 py-3 border-b border-blue-200/50">
+      <div className="bg-white px-4 py-3 border-b border-slate-200">
         <div className="flex items-center space-x-3">
           {/* Collapse Button */}
           {onCollapse && (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import BookSelector from '../components/shared/BookSelector';
 import TableOfContents from '../components/reader/TableOfContents';
@@ -9,6 +9,7 @@ import BookmarkButton from '../components/bookmark/BookmarkButton';
 
 const BookReaderPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Ref for reading mode anchor
   const readerAnchorRef = useRef(null);
@@ -173,6 +174,11 @@ const BookReaderPage = () => {
     setShowTopTab(false);
   };
 
+  const handleBackToLibrary = () => {
+    const returnTab = searchParams.get('return_tab') || 'english';
+    navigate(`/?tab=${returnTab}#library`);
+  };
+
   const handleBookSelect = (book) => {
     const bookWithId = {
       ...book,
@@ -264,37 +270,59 @@ const BookReaderPage = () => {
 
       {/* "Top" Side Tab - Shows when in reading mode */}
       {showTopTab && (
-        <div className="fixed top-1/2 right-0 -translate-y-1/2 z-50">
-          <button
-            onClick={scrollToTop}
-            className="bg-gradient-to-l from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-2xl transition-all duration-300 hover:shadow-blue-500/50 rounded-l-xl flex flex-col items-center py-6 px-3 group"
-            title="Back to top"
-          >
-            {/* Icon */}
-            <div className="bg-white/20 hover:bg-white/30 p-2 rounded-lg mb-2 transition-colors">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-            </div>
-
-            {/* Vertical Text */}
-            <div className="flex flex-col items-center">
-              <div className="text-sm font-bold tracking-wider mb-1" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-                TOP
+        <>
+          {/* Back to Library Button - Mobile Only */}
+          <div className="fixed top-1/3 right-0 -translate-y-1/2 z-50 md:hidden">
+            <button
+              onClick={handleBackToLibrary}
+              className="bg-gradient-to-l from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-2xl transition-all duration-300 hover:shadow-blue-500/50 rounded-l-xl flex flex-col items-center py-4 px-3 group"
+              title="Back to library"
+            >
+              {/* Icon */}
+              <div className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
               </div>
-            </div>
 
-            {/* Hover Tooltip */}
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
-              Back to Top
-            </span>
-          </button>
-        </div>
+              {/* Hover Tooltip */}
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+                Back to Library
+              </span>
+            </button>
+          </div>
+
+          {/* Scroll to Top Button */}
+          <div className="fixed top-1/2 right-0 -translate-y-1/2 z-50">
+            <button
+              onClick={scrollToTop}
+              className="bg-gradient-to-l from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-2xl transition-all duration-300 hover:shadow-blue-500/50 rounded-l-xl flex flex-col items-center py-4 px-3 group"
+              title="Back to top"
+            >
+              {/* Icon */}
+              <div className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              </div>
+
+              {/* Hover Tooltip */}
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+                Back to Top
+              </span>
+            </button>
+          </div>
+        </>
       )}
 
       {/* Two Column Layout: TOC + Page Viewer */}
