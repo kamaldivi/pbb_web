@@ -84,7 +84,7 @@ const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRet
       <div key={item.toc_id} className="select-none">
         <div
           className={`
-            flex items-center py-2 px-2 rounded-md cursor-pointer
+            flex items-center py-3 md:py-2 px-3 md:px-2 rounded-md cursor-pointer
             transition-colors duration-150
             ${hasPageNumber ? 'hover:bg-blue-50' : 'cursor-default'}
             ${level > 0 ? 'ml-' + (level * 4) : ''}
@@ -148,10 +148,10 @@ const TableOfContents = ({ toc, loading, error, onPageSelect, currentPage, onRet
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 md:w-7 md:h-7 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center flex-shrink-0"
               title="Hide Table of Contents"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
               </svg>
             </button>

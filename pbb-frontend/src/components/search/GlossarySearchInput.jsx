@@ -16,20 +16,20 @@ const GlossarySearchInput = ({ onSearch, loading }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+    <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6 border border-slate-200">
       <div className="flex items-center space-x-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Glossary Search</h2>
-          <p className="text-sm text-slate-600">Search for spiritual terms and concepts across all books</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800">Glossary Search</h2>
+          <p className="text-xs md:text-sm text-slate-600">Search for spiritual terms and concepts across all books</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <input
             type="text"
@@ -37,6 +37,7 @@ const GlossarySearchInput = ({ onSearch, loading }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Enter a term to search (e.g., 'bhakti', 'Krishna', 'prema')..."
             className="w-full px-5 py-3.5 pl-12 pr-12 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-slate-400 text-slate-800 font-medium"
+            style={{ fontSize: '16px' }}
             disabled={loading}
           />
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -61,7 +62,7 @@ const GlossarySearchInput = ({ onSearch, loading }) => {
           type="submit"
           disabled={!searchTerm.trim() || loading}
           className={`
-            px-8 py-3.5 rounded-xl font-semibold text-sm shadow-md transition-all duration-200
+            px-6 sm:px-8 py-3.5 rounded-xl font-semibold text-sm shadow-md transition-all duration-200
             ${!searchTerm.trim() || loading
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
               : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 active:scale-95 hover:shadow-lg'

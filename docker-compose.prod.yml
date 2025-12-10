@@ -49,6 +49,7 @@ services:
       - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
       - ~/pbb-certs/letsencrypt:/etc/letsencrypt:ro
+      - ~/pbb-certs/www:/var/www/certbot:ro
       - nginx-ssl-logs:/var/log/nginx
     entrypoint: /bin/sh -c "rm -f /var/log/nginx/access.log /var/log/nginx/error.log && touch /var/log/nginx/access.log /var/log/nginx/error.log && exec nginx -g 'daemon off;'"
     depends_on:

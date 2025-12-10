@@ -77,10 +77,21 @@ const PageNavigation = ({
     // Calculate position for dropdown
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 8, // 8px below the button
-        left: rect.left
-      });
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        // On mobile, center the dialog vertically
+        setDropdownPosition({
+          top: window.innerHeight / 2 - 150, // Center vertically (approximate height 300px)
+          left: rect.left
+        });
+      } else {
+        // On desktop, position below button
+        setDropdownPosition({
+          top: rect.bottom + 8, // 8px below the button
+          left: rect.left
+        });
+      }
     }
     setShowGoToDialog(true);
     setErrorMessage('');
@@ -141,10 +152,21 @@ const PageNavigation = ({
   const handleShareClick = useCallback(() => {
     if (shareButtonRef.current) {
       const rect = shareButtonRef.current.getBoundingClientRect();
-      setShareMenuPosition({
-        top: rect.bottom + 8,
-        left: rect.left
-      });
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        // On mobile, center the menu vertically
+        setShareMenuPosition({
+          top: window.innerHeight / 2 - 150, // Center vertically
+          left: rect.left
+        });
+      } else {
+        // On desktop, position below button
+        setShareMenuPosition({
+          top: rect.bottom + 8,
+          left: rect.left
+        });
+      }
     }
     setShowShareMenu(true);
   }, []);
@@ -234,15 +256,15 @@ const PageNavigation = ({
           opacity: 1;
         }
       `}</style>
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 px-4 py-2.5 mb-3">
-        <div className="flex items-center justify-between gap-3">
+      <div className="bg-white rounded-xl shadow-md border border-slate-200 px-3 md:px-4 py-3 md:py-2.5 mb-3">
+        <div className="flex items-center justify-between gap-2 md:gap-3">
           {/* Left: Library + Share + Bookmark Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-2">
             {/* Back to Library Button */}
             <button
               onClick={handleBackToLibrary}
               data-tooltip="Back to Library"
-              className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+              className="tooltip-button p-2.5 md:p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
               title="Back to library"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +278,7 @@ const PageNavigation = ({
               onClick={handleShareClick}
               data-tooltip={linkCopied ? 'Link Copied!' : 'Share Page'}
               className={`
-                tooltip-button p-2 rounded-lg transition-all duration-200 active:scale-95
+                tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200 active:scale-95
                 ${linkCopied
                   ? 'text-green-600 hover:bg-green-50'
                   : 'text-blue-600 hover:bg-blue-50'
@@ -278,7 +300,7 @@ const PageNavigation = ({
             disabled={isFirstPage}
             data-tooltip="Previous Page"
             className={`
-              tooltip-button p-2 rounded-lg transition-all duration-200
+              tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200
               ${isFirstPage
                 ? 'text-gray-300 cursor-not-allowed'
                 : 'text-blue-600 hover:bg-blue-50 active:scale-95'
@@ -307,7 +329,7 @@ const PageNavigation = ({
             disabled={isLastPage}
             data-tooltip="Next Page"
             className={`
-              tooltip-button p-2 rounded-lg transition-all duration-200
+              tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200
               ${isLastPage
                 ? 'text-gray-300 cursor-not-allowed'
                 : 'text-blue-600 hover:bg-blue-50 active:scale-95'
@@ -327,7 +349,7 @@ const PageNavigation = ({
               ref={buttonRef}
               onClick={handleGoToPage}
               data-tooltip="Go to Page"
-              className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+              className="tooltip-button p-2.5 md:p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
               title="Go to specific page"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -358,24 +380,25 @@ const PageNavigation = ({
           {/* Dropdown positioned below button */}
           <div
             ref={dropdownRef}
-            className="fixed w-80 bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-5 z-[9999]"
+            className="fixed w-[calc(100vw-2rem)] max-w-sm bg-white rounded-lg shadow-2xl border-2 border-blue-200 p-3 md:p-4 z-[9999]"
             style={{
               top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`
+              left: `${Math.max(16, dropdownPosition.left)}px`,
+              right: '1rem'
             }}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h8m0 0-3-3m3 3-3 3" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-800">Go To Page</h3>
+              <h3 className="text-base md:text-lg font-bold text-slate-800">Go To Page</h3>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+            <div className="mb-3">
+              <label className="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5">
                 Enter page label:
               </label>
               <input
@@ -386,11 +409,12 @@ const PageNavigation = ({
                   setErrorMessage('');
                 }}
                 placeholder="e.g., xxvii, a1, 32"
-                className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none transition-colors ${
+                className={`w-full px-3 py-2 text-base border-2 rounded-lg focus:outline-none transition-colors ${
                   errorMessage
                     ? 'border-red-400 focus:border-red-500'
                     : 'border-slate-300 focus:border-blue-500'
                 }`}
+                style={{ fontSize: '16px' }}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -403,30 +427,30 @@ const PageNavigation = ({
                 }}
               />
               {errorMessage && (
-                <p className="text-xs text-red-600 mt-2 font-medium">
+                <p className="text-xs text-red-600 mt-1.5 font-medium">
                   {errorMessage}
                 </p>
               )}
-              <p className="text-xs text-slate-500 mt-2">
-                Current page: {pageLabel || currentPage} ({currentPage} of {totalPages})
+              <p className="text-xs text-slate-500 mt-1.5">
+                Current: {pageLabel || currentPage} ({currentPage}/{totalPages})
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse md:flex-row gap-2">
               <button
                 onClick={() => {
                   setShowGoToDialog(false);
                   setGoToInput('');
                   setErrorMessage('');
                 }}
-                className="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors"
+                className="flex-1 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleGoToSubmit}
                 disabled={!goToInput.trim()}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 Go
               </button>
@@ -448,10 +472,11 @@ const PageNavigation = ({
           {/* Share menu positioned below button */}
           <div
             ref={shareMenuRef}
-            className="fixed w-64 bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999]"
+            className="fixed w-[calc(100vw-2rem)] max-w-xs bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999]"
             style={{
               top: `${shareMenuPosition.top}px`,
-              left: `${shareMenuPosition.left}px`
+              left: `${Math.max(16, shareMenuPosition.left)}px`,
+              right: '1rem'
             }}
           >
             <div className="flex items-center gap-3 mb-4">

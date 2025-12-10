@@ -15,6 +15,8 @@ const BookReaderPage = () => {
   const readerAnchorRef = useRef(null);
   // Ref for ImageViewer to control fullscreen
   const imageViewerRef = useRef(null);
+  // Ref for image viewer container to scroll to on mobile
+  const viewerContainerRef = useRef(null);
 
   // State management
   const [books, setBooks] = useState([]);
@@ -199,12 +201,24 @@ const BookReaderPage = () => {
 
   const handleTocPageSelect = (pageNumber) => {
     setCurrentPage(pageNumber);
+
+    // On mobile, scroll to the image viewer after TOC link is clicked
+    if (window.innerWidth < 768 && viewerContainerRef.current) {
+      setTimeout(() => {
+        viewerContainerRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
+    }
   };
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    // Scroll to reading mode after page navigation
-    setTimeout(() => scrollToReadingMode(), 100);
+    // Scroll to reading mode after page navigation (desktop only)
+    if (window.innerWidth >= 768) {
+      setTimeout(() => scrollToReadingMode(), 100);
+    }
   };
 
   const handleRetryBooks = () => {
@@ -327,11 +341,11 @@ const BookReaderPage = () => {
 
       {/* Two Column Layout: TOC + Page Viewer */}
       {selectedBook && (
-        <section className="flex gap-6 relative">
+        <section className="flex flex-col md:flex-row gap-4 md:gap-6 relative">
           {/* Left Column: Table of Contents - Collapsible */}
           <div
             className={`transition-all duration-300 relative flex-shrink-0 ${
-              tocCollapsed ? 'w-auto' : 'w-[30%] min-w-[300px]'
+              tocCollapsed ? 'w-auto' : 'w-full md:w-[30%] md:min-w-[300px]'
             }`}
           >
             {/* TOC Expanded State */}
@@ -352,7 +366,7 @@ const BookReaderPage = () => {
               <div className="h-full flex items-start pt-0">
                 <button
                   onClick={() => setTocCollapsed(false)}
-                  className="bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 border-2 border-blue-300 hover:border-blue-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
+                  className="relative bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 border-2 border-blue-300 hover:border-blue-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
                   title="Show Table of Contents"
                 >
                   {/* Icon */}
@@ -378,7 +392,7 @@ const BookReaderPage = () => {
                   </div>
 
                   {/* Hover Tooltip */}
-                  <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+                  <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-[1000]">
                     Click to show TOC
                   </span>
                 </button>
@@ -427,54 +441,57 @@ const BookReaderPage = () => {
             )}
 
             {/* Page Image Viewer (No Header) */}
-            <div className="flex-1 image-viewer-container mb-4">
+            <div ref={viewerContainerRef} className="flex-1 image-viewer-container mb-4">
               <ImageViewer
                 ref={imageViewerRef}
                 bookId={selectedBook?.id}
                 pageNumber={currentPage}
                 pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
                 totalPages={totalPages}
+                pages={pages}
                 onPageChange={handlePageChange}
               />
             </div>
 
-            {/* Ultra-Compact Navigation Bar (BOTTOM - REPEAT) */}
-            {currentPage && totalPages > 0 && (
-              <PageNavigation
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
-                bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                bookId={selectedBook?.id}
-                pages={pages}
-                bookmarkButton={
-                  <BookmarkButton
-                    bookId={selectedBook?.id}
-                    bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                    pageNumber={currentPage}
-                    onBookmarkChange={(data) => {
-                      console.log('Bookmark changed:', data);
-                    }}
-                    compactMode={true}
-                  />
-                }
-                fullscreenButton={
-                  <button
-                    onClick={() => {
-                      imageViewerRef.current?.toggleFullscreen();
-                    }}
-                    data-tooltip="Fullscreen"
-                    className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
-                    title="View fullscreen"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                    </svg>
-                  </button>
-                }
-              />
-            )}
+            {/* Ultra-Compact Navigation Bar (BOTTOM - REPEAT) - Hidden on Mobile */}
+            <div className="hidden md:block">
+              {currentPage && totalPages > 0 && (
+                <PageNavigation
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                  bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                  bookId={selectedBook?.id}
+                  pages={pages}
+                  bookmarkButton={
+                    <BookmarkButton
+                      bookId={selectedBook?.id}
+                      bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                      pageNumber={currentPage}
+                      onBookmarkChange={(data) => {
+                        console.log('Bookmark changed:', data);
+                      }}
+                      compactMode={true}
+                    />
+                  }
+                  fullscreenButton={
+                    <button
+                      onClick={() => {
+                        imageViewerRef.current?.toggleFullscreen();
+                      }}
+                      data-tooltip="Fullscreen"
+                      className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                      title="View fullscreen"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                      </svg>
+                    </button>
+                  }
+                />
+              )}
+            </div>
           </div>
         </section>
       )}

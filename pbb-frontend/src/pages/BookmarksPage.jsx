@@ -164,6 +164,37 @@ const BookmarksPage = () => {
 
   return (
     <div className="space-y-6">
+      {/* Tooltip Styles */}
+      <style>{`
+        .tooltip-button {
+          position: relative;
+        }
+        .tooltip-button::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%) translateY(-4px);
+          background-color: rgba(15, 23, 42, 0.95);
+          color: white;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s ease-in-out;
+          z-index: 1000;
+        }
+        .tooltip-button:hover::after {
+          opacity: 1;
+        }
+        .tooltip-button:disabled::after {
+          display: none;
+        }
+      `}</style>
+
       {/* Header */}
       <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -186,8 +217,8 @@ const BookmarksPage = () => {
             <button
               onClick={handleExport}
               disabled={bookmarks.length === 0}
-              className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600"
-              title="Export bookmarks as JSON"
+              className="tooltip-button p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600"
+              data-tooltip="Export bookmarks as JSON"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -195,8 +226,8 @@ const BookmarksPage = () => {
             </button>
             <button
               onClick={handleImport}
-              className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-              title="Import bookmarks from JSON"
+              className="tooltip-button p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+              data-tooltip="Import bookmarks from JSON"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -205,8 +236,8 @@ const BookmarksPage = () => {
             <button
               onClick={handleClearAll}
               disabled={bookmarks.length === 0}
-              className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600"
-              title="Clear all bookmarks"
+              className="tooltip-button p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600"
+              data-tooltip="Clear all bookmarks"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

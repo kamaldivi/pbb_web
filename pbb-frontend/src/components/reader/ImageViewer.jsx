@@ -1,17 +1,149 @@
-import { useState, useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
-const ImageViewer = forwardRef(({ bookId, pageNumber, pageLabel, totalPages, onPageChange }, ref) => {
+const ImageViewer = forwardRef(({
+  bookId,
+  pageNumber,
+  pageLabel,
+  totalPages,
+  pages = [],
+  onPageChange
+}, ref) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [currentVisiblePage, setCurrentVisiblePage] = useState(pageNumber);
+  const scrollContainerRef = useRef(null);
+  const pageRefs = useRef({});
+  const isScrollingProgrammatically = useRef(false);
+  const previousPageNumber = useRef(pageNumber);
 
   // Expose toggleFullscreen method to parent via ref
   useImperativeHandle(ref, () => ({
     toggleFullscreen: () => {
-      setFullscreen(prev => !prev);
+      const willEnterFullscreen = !fullscreen;
+      setFullscreen(willEnterFullscreen);
+
+      // Scroll to current page when entering fullscreen
+      if (willEnterFullscreen) {
+        setTimeout(() => {
+          if (pageRefs.current[pageNumber]) {
+            pageRefs.current[pageNumber].scrollIntoView({
+              behavior: 'auto',
+              block: 'start'
+            });
+          }
+        }, 100);
+      }
     }
   }));
+
+  // Scroll to page ONLY when external navigation occurs (TOC, buttons, Go To Page)
+  // NOT when scroll tracking updates the page
+  useEffect(() => {
+    // Only handle scrolling in fullscreen mode
+    if (!fullscreen) return;
+
+    // Check if this is an external page change (not from scroll tracking)
+    const isExternalPageChange = previousPageNumber.current !== pageNumber;
+
+    // IMPORTANT: Only scroll if the page change came from outside (user clicked something)
+    // We detect this by checking if we're already scrolling programmatically
+    // If scroll tracking updated the page, we should NOT scroll
+    if (isExternalPageChange && !isScrollingProgrammatically.current) {
+      // This is a genuine external navigation (TOC click, button press, etc.)
+      previousPageNumber.current = pageNumber;
+
+      if (pageRefs.current[pageNumber]) {
+        isScrollingProgrammatically.current = true;
+        pageRefs.current[pageNumber].scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        // Reset flag after scroll completes
+        setTimeout(() => {
+          isScrollingProgrammatically.current = false;
+        }, 300);
+      }
+    } else {
+      // Just update the ref without scrolling (scroll tracking updated the page)
+      previousPageNumber.current = pageNumber;
+    }
+  }, [fullscreen, pageNumber]);
+
+  // Track visible page in fullscreen mode using "top of viewport" detection
+  useEffect(() => {
+    if (!fullscreen || !scrollContainerRef.current) return;
+
+    let scrollTimeout = null;
+
+    const handleScroll = () => {
+      // Skip scroll tracking if we're scrolling programmatically
+      if (isScrollingProgrammatically.current) return;
+
+      // Clear previous timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+
+      // Debounce the scroll handler
+      scrollTimeout = setTimeout(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const viewportTop = containerRect.top;
+
+        // Find the page that is at or just past the top of the viewport
+        // This gives us the "current page" the user is reading
+        let detectedPage = 1;
+        let minDistance = Infinity;
+
+        for (let i = 1; i <= totalPages; i++) {
+          const pageEl = pageRefs.current[i];
+          if (pageEl) {
+            const rect = pageEl.getBoundingClientRect();
+            const pageTop = rect.top;
+
+            // Distance from page top to viewport top
+            // Positive = page is below viewport, Negative = page is above viewport
+            const distance = pageTop - viewportTop;
+
+            // If page top is visible or just above viewport (within reasonable threshold)
+            // and it's closer than previous candidates, this is our current page
+            if (distance <= 50 && Math.abs(distance) < minDistance) {
+              minDistance = Math.abs(distance);
+              detectedPage = i;
+            }
+          }
+        }
+
+        // Update only if page changed
+        if (currentVisiblePage !== detectedPage) {
+          setCurrentVisiblePage(detectedPage);
+          // Update parent's current page WITHOUT triggering auto-scroll
+          if (onPageChange && pageNumber !== detectedPage) {
+            // Set flag to prevent auto-scroll from this update
+            isScrollingProgrammatically.current = true;
+            onPageChange(detectedPage);
+            // Clear flag immediately so actual navigation still works
+            setTimeout(() => {
+              isScrollingProgrammatically.current = false;
+            }, 50);
+          }
+        }
+      }, 150); // Debounce delay
+    };
+
+    const container = scrollContainerRef.current;
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, [fullscreen, totalPages, currentVisiblePage, onPageChange, pageNumber]);
 
   if (!bookId || !pageNumber) {
     return (
@@ -62,6 +194,7 @@ const ImageViewer = forwardRef(({ bookId, pageNumber, pageLabel, totalPages, onP
   const canGoPrevious = pageNumber > 1;
   const canGoNext = totalPages && pageNumber < totalPages;
 
+  // Normal mode: Always render single page (pagination)
   return (
     <>
       <div className="w-full bg-white rounded-lg shadow-md overflow-hidden">
@@ -101,14 +234,14 @@ const ImageViewer = forwardRef(({ bookId, pageNumber, pageLabel, totalPages, onP
 
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* Fullscreen Modal - Continuous Scroll Mode (Always enabled in fullscreen) */}
       {fullscreen && (
         <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full flex flex-col">
             {/* Close Button */}
             <button
               onClick={closeFullscreen}
-              className="absolute top-4 right-4 z-10 bg-black bg-opacity-60 text-white p-3 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
+              className="absolute top-4 right-4 z-20 bg-black bg-opacity-60 text-white p-3 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
               title="Close fullscreen (Esc)"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,48 +249,35 @@ const ImageViewer = forwardRef(({ bookId, pageNumber, pageLabel, totalPages, onP
               </svg>
             </button>
 
-            {/* Previous Page Button */}
-            {canGoPrevious && (
-              <button
-                onClick={handlePreviousPage}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-60 text-white p-4 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
-                title="Previous page (←)"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
+            {/* Continuous Scroll Content */}
+            <div
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto p-8"
+            >
+              <div className="max-w-5xl mx-auto">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
+                  const pageImagePath = `/pbb_book_pages/${bookId}/${pageNum}.webp`;
 
-            {/* Next Page Button */}
-            {canGoNext && (
-              <button
-                onClick={handleNextPage}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-60 text-white p-4 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
-                title="Next page (→)"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Image */}
-            <div className="max-w-[90%] max-h-[90%] flex items-center justify-center">
-              <img
-                src={imagePath}
-                alt={`Page ${pageNumber} of Book ${bookId} - Fullscreen`}
-                className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: 'calc(100vh - 100px)' }}
-              />
-            </div>
-
-            {/* Page Info Footer */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-6 py-3 rounded-xl shadow-lg">
-              <p className="text-base font-medium">
-                {pageLabel || `Page ${pageNumber}`}
-                {totalPages && ` of ${totalPages}`}
-              </p>
+                  return (
+                    <div
+                      key={pageNum}
+                      ref={el => pageRefs.current[pageNum] = el}
+                      className="mb-12 last:mb-0"
+                    >
+                      {/* Page Image */}
+                      <img
+                        src={pageImagePath}
+                        alt={`Page ${pageNum} of Book ${bookId} - Fullscreen`}
+                        className="w-full object-contain"
+                        loading={Math.abs(pageNum - pageNumber) <= 5 ? "eager" : "lazy"}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
