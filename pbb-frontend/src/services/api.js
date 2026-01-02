@@ -1,15 +1,32 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
-// Use the current window's hostname for API calls so it works from any device on the network
+// Determine the appropriate base URL based on platform
 const getBaseUrl = () => {
+  const platform = Capacitor.getPlatform();
+  
+  if (platform === 'ios' || platform === 'android') {
+    // For mobile, use the production URL or configure your dev server
+    // IMPORTANT: Update this with your actual API server URL
+    return 'https://purebhaktibase.com:8443';
+    
+    // For local development with real device, use your computer's IP
+    // return 'https://192.168.1.XXX:8443'; // Replace XXX with your IP
+  }
+  
+  // For web (browser)
   if (typeof window !== 'undefined') {
     return `https://${window.location.hostname}:8443`;
   }
-  // Fallback for server-side rendering or non-browser environments
+  
+  // Fallback
   return 'https://localhost:8443';
 };
 
 const BASE_URL = getBaseUrl();
+
+console.log('API Base URL:', BASE_URL);
+console.log('Platform:', Capacitor.getPlatform());
 
 const api = axios.create({
   baseURL: BASE_URL,
