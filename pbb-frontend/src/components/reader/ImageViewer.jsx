@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { getBookPage } from '../../services/assetHelper';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
 const ImageViewer = forwardRef(({
@@ -159,7 +160,7 @@ const ImageViewer = forwardRef(({
     );
   }
 
-  const imagePath = `/pbb_book_pages/${bookId}/${pageNumber}.webp`;
+  const imagePath = getBookPage(bookId, pageNumber);
 
   const handleImageLoad = () => {
     setImageLoading(false);
@@ -230,8 +231,6 @@ const ImageViewer = forwardRef(({
             onError={handleImageError}
           />
         </div>
-
-
       </div>
 
       {/* Fullscreen Modal - Continuous Scroll Mode (Always enabled in fullscreen) */}
@@ -256,7 +255,7 @@ const ImageViewer = forwardRef(({
             >
               <div className="max-w-5xl mx-auto">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
-                  const pageImagePath = `/pbb_book_pages/${bookId}/${pageNum}.webp`;
+                  const pageImagePath = getBookPage(bookId, pageNum);
 
                   return (
                     <div

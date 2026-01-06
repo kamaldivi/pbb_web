@@ -6,7 +6,7 @@ const Footer = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <img
-              src="/images/gokul_bhajan_logo.png"
+              src="images/gokul_bhajan_logo.png"
               alt="Gokul Bhajan Logo"
               className="w-32 h-32 object-contain"
             />
