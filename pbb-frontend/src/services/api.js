@@ -1,82 +1,92 @@
-import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
-import { LOCAL_CONFIG } from '../../local';
+import { CapacitorHttp } from '@capacitor/core';
+import axios from 'axios';
 
-const getBaseUrl = () => {
-  const platform = Capacitor.getPlatform();
-  
-  console.log('Capacitor Platform:', platform);
-  console.log('Is Native:', Capacitor.isNativePlatform());
-  
-  if (platform === 'ios' || platform === 'android') {
-    // Mobile: Use proxy to bypass CORS
-    // REPLACE 192.168.1.XXX with your actual IP address
-    const proxyUrl = `https://${LOCAL_CONFIG.PROXY_IP}:3000`;
-    console.log('Using mobile proxy URL:', proxyUrl);
-    return proxyUrl;
-  }
-  
-  // Web: Connect directly to production
-  console.log('Using production API URL');
-  return 'https://purebhaktibase.com:8443';
-};
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = 'https://purebhaktibase.com:8443';
 
 console.log('API Base URL:', BASE_URL);
 console.log('Platform:', Capacitor.getPlatform());
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Use native HTTP on mobile to avoid CORS, axios on web
+const isNative = Capacitor.isNativePlatform();
 
-api.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+const makeRequest = async (method, url, data = null) => {
+  const fullUrl = `${BASE_URL}${url}`;
+  
+  console.log(`API Request: ${method.toUpperCase()} ${url}`);
 
-api.interceptors.response.use(
-  (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
-    return response;
-  },
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
+  if (isNative) {
+    // Use Capacitor HTTP for native platforms (bypasses CORS)
+    const options = {
+      url: fullUrl,
+      method: method.toUpperCase(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    if (data) {
+      options.data = data;
+    }
+
+    try {
+      const response = await CapacitorHttp.request(options);
+      console.log(`API Response: ${response.status} ${url}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  } else {
+    // Use axios for web
+    const axiosInstance = axios.create({
+      baseURL: BASE_URL,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    try {
+      const response = await axiosInstance({
+        method,
+        url,
+        data,
+      });
+      console.log(`API Response: ${response.status} ${url}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error.response?.data || error.message);
+      throw error;
+    }
   }
-);
+};
 
 export const apiService = {
   async getBooks() {
     try {
-      const firstResponse = await api.get('/api/v1/books?page=1&size=100');
-      console.log('API Response Data:', firstResponse.data);
+      // Get first page to see total count
+      const firstResponse = await makeRequest('get', '/api/v1/books?page=1&size=100');
+      console.log('API Response Data:', firstResponse);
 
-      const { books: firstBooks, total, size } = firstResponse.data;
+      const { books: firstBooks, total, size } = firstResponse;
 
+      // If we got all books in first request, return them
       if (firstBooks.length >= total) {
-        return firstResponse.data;
+        return firstResponse;
       }
 
+      // Otherwise, get all remaining pages
       const allBooks = [...firstBooks];
       const totalPages = Math.ceil(total / size);
 
       for (let page = 2; page <= totalPages; page++) {
-        const response = await api.get(`/api/v1/books?page=${page}&size=${size}`);
-        allBooks.push(...response.data.books);
+        const response = await makeRequest('get', `/api/v1/books?page=${page}&size=${size}`);
+        allBooks.push(...response.books);
       }
 
       return {
-        ...firstResponse.data,
+        ...firstResponse,
         books: allBooks,
         size: allBooks.length
       };
@@ -87,9 +97,9 @@ export const apiService = {
 
   async getBookPages(bookId) {
     try {
-      const response = await api.get(`/api/v1/books/${bookId}/pages`);
-      console.log('Pages API Response Data:', response.data);
-      return response.data;
+      const response = await makeRequest('get', `/api/v1/books/${bookId}/pages`);
+      console.log('Pages API Response Data:', response);
+      return response;
     } catch (error) {
       throw new Error(`Failed to fetch pages for book ${bookId}: ${error.message}`);
     }
@@ -97,9 +107,9 @@ export const apiService = {
 
   async getPageContent(bookId, pageNumber) {
     try {
-      const response = await api.get(`/api/v1/books/${bookId}/content/${pageNumber}`);
-      console.log('Page Content API Response Data:', response.data);
-      return response.data;
+      const response = await makeRequest('get', `/api/v1/books/${bookId}/content/${pageNumber}`);
+      console.log('Page Content API Response Data:', response);
+      return response;
     } catch (error) {
       throw new Error(`Failed to fetch content for book ${bookId}, page ${pageNumber}: ${error.message}`);
     }
@@ -107,9 +117,9 @@ export const apiService = {
 
   async getBookTOC(bookId) {
     try {
-      const response = await api.get(`/api/v1/books/${bookId}/toc`);
-      console.log('TOC API Response Data:', response.data);
-      return response.data;
+      const response = await makeRequest('get', `/api/v1/books/${bookId}/toc`);
+      console.log('TOC API Response Data:', response);
+      return response;
     } catch (error) {
       throw new Error(`Failed to fetch TOC for book ${bookId}: ${error.message}`);
     }
@@ -117,15 +127,15 @@ export const apiService = {
 
   async searchGlossary(term, page = 1, size = 50) {
     try {
-      const response = await api.post('/api/v1/glossary/search', {
+      const response = await makeRequest('post', '/api/v1/glossary/search', {
         query: term,
         page,
         size
       });
-      console.log('Glossary Search API Response Data:', response.data);
-      return response.data;
+      console.log('Glossary Search API Response Data:', response);
+      return response;
     } catch (error) {
-      if (error.response?.status === 400) {
+      if (error.response?.status === 400 || error.status === 400) {
         throw new Error('Your search contains words that are not appropriate for this sacred library. Please refine your search.');
       }
       throw new Error(`Failed to search glossary for term "${term}": ${error.message}`);
@@ -133,4 +143,4 @@ export const apiService = {
   }
 };
 
-export default api;
+export default apiService;

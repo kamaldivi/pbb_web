@@ -1,3 +1,0 @@
-export const LOCAL_CONFIG = {
-  PROXY_IP: '192.168.XX.XXX'  // UPDATE THIS
-};
