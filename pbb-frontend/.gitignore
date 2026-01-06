@@ -55,3 +55,10 @@ local.properties
 /captures
 .externalNativeBuild
 .cxx
+
+local.js
+
+# SSL certificates
+*.pem
+localhost-key.pem
+localhost-cert.pem

@@ -1,26 +1,24 @@
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
+import { LOCAL_CONFIG } from '../../local';
 
-// Determine the appropriate base URL based on platform
 const getBaseUrl = () => {
   const platform = Capacitor.getPlatform();
   
+  console.log('Capacitor Platform:', platform);
+  console.log('Is Native:', Capacitor.isNativePlatform());
+  
   if (platform === 'ios' || platform === 'android') {
-    // For mobile, use the production URL or configure your dev server
-    // IMPORTANT: Update this with your actual API server URL
-    return 'https://purebhaktibase.com:8443';
-    
-    // For local development with real device, use your computer's IP
-    // return 'https://192.168.1.XXX:8443'; // Replace XXX with your IP
+    // Mobile: Use proxy to bypass CORS
+    // REPLACE 192.168.1.XXX with your actual IP address
+    const proxyUrl = `https://${LOCAL_CONFIG.PROXY_IP}:3000`;
+    console.log('Using mobile proxy URL:', proxyUrl);
+    return proxyUrl;
   }
   
-  // For web (browser)
-  if (typeof window !== 'undefined') {
-    return `https://${window.location.hostname}:8443`;
-  }
-  
-  // Fallback
-  return 'https://localhost:8443';
+  // Web: Connect directly to production
+  console.log('Using production API URL');
+  return 'https://purebhaktibase.com:8443';
 };
 
 const BASE_URL = getBaseUrl();
@@ -60,18 +58,15 @@ api.interceptors.response.use(
 export const apiService = {
   async getBooks() {
     try {
-      // Get first page to see total count
       const firstResponse = await api.get('/api/v1/books?page=1&size=100');
       console.log('API Response Data:', firstResponse.data);
 
       const { books: firstBooks, total, size } = firstResponse.data;
 
-      // If we got all books in first request, return them
       if (firstBooks.length >= total) {
         return firstResponse.data;
       }
 
-      // Otherwise, get all remaining pages
       const allBooks = [...firstBooks];
       const totalPages = Math.ceil(total / size);
 
