@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { getBookThumbnail, getBookPdf } from '../services/assetHelper';
+import { usePlatform } from '../services/usePlatform';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 
 const HomePage = () => {
@@ -11,7 +12,20 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBookForSummary, setSelectedBookForSummary] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  
+  // Use Capacitor platform detection
+  const platform = usePlatform();
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Show/hide scroll to top button based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Initialize activeTab from URL parameter or default to 'english'
   const getInitialTab = () => {
@@ -26,18 +40,15 @@ const HomePage = () => {
   useEffect(() => {
     loadBooks();
 
-    // Handle return from reader - if return_tab is in URL, set it as the active tab
     const returnTab = searchParams.get('return_tab');
     if (returnTab && ['english', 'tamil', 'rays'].includes(returnTab)) {
       setSearchParams({ tab: returnTab }, { replace: true });
     } else if (!searchParams.get('tab')) {
-      // If no tab parameter exists, set default to english
       setSearchParams({ tab: 'english' }, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync activeTab with URL parameter changes (handles browser back/forward)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const validTabs = ['english', 'tamil', 'rays'];
@@ -45,10 +56,9 @@ const HomePage = () => {
     if (tabParam && validTabs.includes(tabParam)) {
       if (tabParam !== activeTab) {
         setActiveTab(tabParam);
-        setSearchTerm(''); // Clear search when tab changes via URL
+        setSearchTerm('');
       }
     } else if (tabParam && !validTabs.includes(tabParam)) {
-      // Invalid tab in URL, redirect to default
       setSearchParams({ tab: 'english' }, { replace: true });
     }
   }, [searchParams, activeTab, setSearchParams]);
@@ -57,7 +67,6 @@ const HomePage = () => {
     try {
       setLoading(true);
       const booksData = await apiService.getBooks();
-      // Sort alphabetically by original_book_title
       const sortedBooks = (booksData?.books || booksData || []).sort((a, b) => {
         const titleA = a.original_book_title || a.english_book_title || '';
         const titleB = b.original_book_title || b.english_book_title || '';
@@ -74,12 +83,11 @@ const HomePage = () => {
 
   const handleBookClick = (book) => {
     const bookId = book.id || book._id || book.book_id;
-    // Navigate to reader and preserve current tab in URL for when user returns
     navigate(`/reader?book_id=${bookId}&return_tab=${activeTab}`);
   };
 
   const handleShowSummary = async (e, book) => {
-    e.stopPropagation(); // Prevent triggering handleBookClick
+    e.stopPropagation();
     setSelectedBookForSummary(book);
   };
 
@@ -89,7 +97,6 @@ const HomePage = () => {
 
   const handleDownloadPDF = (book) => {
     if (!book.pdf_name) return;
-
     const pdfUrl = getBookPdf(book.pdf_name);
     const link = document.createElement('a');
     link.href = pdfUrl;
@@ -101,37 +108,31 @@ const HomePage = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchTerm(''); // Clear search when switching tabs
-    // Update URL to reflect tab change
+    setSearchTerm('');
     setSearchParams({ tab }, { replace: false });
   };
 
-  // Group books by type
   const booksByType = {
     english: books.filter(book => book.book_type?.startsWith('english')),
     tamil: books.filter(book => book.book_type?.startsWith('tamil')),
     rays: books.filter(book => book.book_type === 'rays'),
   };
 
-  // Group English books into sub-sections
   const englishSections = {
     gurudev: books.filter(book => book.book_type === 'english-gurudev'),
     gokulbhajan: books.filter(book => book.book_type === 'english-gokul-bhajan'),
   };
 
-  // Group Tamil books into sub-sections
   const tamilSections = {
     gurudev: books.filter(book => book.book_type === 'tamil-gurudev'),
     gokulbhajan: books.filter(book => book.book_type === 'tamil-gokul-bhajan'),
   };
 
-  // Filter books for current tab based on search term (scoped to active tab)
   const filteredBooks = booksByType[activeTab]?.filter(book => {
     const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
     return bookTitle.toLowerCase().includes(searchTerm.toLowerCase());
   }) || [];
 
-  // Filter English sections based on search
   const filteredEnglishSections = {
     gurudev: englishSections.gurudev.filter(book => {
       const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
@@ -143,7 +144,6 @@ const HomePage = () => {
     }),
   };
 
-  // Filter Tamil sections based on search
   const filteredTamilSections = {
     gurudev: tamilSections.gurudev.filter(book => {
       const bookTitle = book.original_book_title || book.english_book_title || book.title || '';
@@ -159,6 +159,46 @@ const HomePage = () => {
     const bookId = book.id || book._id || book.book_id;
     const bookTitle = book.original_book_title || book.english_book_title || book.title || `Book ${bookId}`;
     const thumbnailPath = getBookThumbnail(bookId);
+
+    if (platform.isMobile) {
+      return (
+        <div
+          key={bookId}
+          onClick={() => handleBookClick(book)}
+          className="bg-white rounded-xl shadow-md active:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden border border-gray-200 flex"
+        >
+          <div className="w-24 flex-shrink-0 bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
+            <img
+              src={thumbnailPath}
+              alt={bookTitle}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                const fallback = document.createElement('div');
+                fallback.className = 'text-blue-400';
+                fallback.innerHTML = `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+                e.target.parentElement.appendChild(fallback);
+              }}
+            />
+          </div>
+          <div className="flex-1 p-3 flex flex-col">
+            <h3 className="font-bold text-sm text-slate-800 line-clamp-2 mb-2">
+              {bookTitle}
+            </h3>
+            <button
+              onClick={(e) => handleShowSummary(e, book)}
+              className="mt-auto px-3 py-1.5 text-xs font-medium text-blue-600 active:text-blue-800 active:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1 border border-blue-200"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Details</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -200,16 +240,21 @@ const HomePage = () => {
     );
   };
 
+  const getGridClass = () => {
+    if (platform.isMobile) {
+      return "space-y-3";
+    }
+    return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4";
+  };
+
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Library Section */}
       <div id="library" className="bg-white rounded-2xl shadow-xl p-4 md:p-6 lg:p-8 border border-slate-200">
         <div className="flex items-center space-x-2 md:space-x-3 mb-4 md:mb-6">
           <div className="text-3xl md:text-4xl">📚</div>
           <h2 className="text-2xl md:text-3xl font-bold text-slate-800">Library Collection</h2>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex items-center space-x-1 md:space-x-2 mb-4 md:mb-6 border-b border-slate-200 overflow-x-auto">
           <button
             onClick={() => handleTabChange('english')}
@@ -264,10 +309,8 @@ const HomePage = () => {
           </button>
         </div>
 
-        {/* Tab Content */}
         {(activeTab === 'english' || activeTab === 'tamil' || activeTab === 'rays') && (
           <>
-            {/* Search Box */}
             <div className="mb-6">
               <div className="relative">
                 <input
@@ -275,7 +318,7 @@ const HomePage = () => {
                   placeholder={`Search ${activeTab === 'english' ? 'English Books' : activeTab === 'tamil' ? 'Tamil Books' : 'Rays of the Harmonist'} by title...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 pr-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-slate-400"
+                  className="w-full px-4 py-3 pl-12 pr-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-slate-400 text-slate-800"
                   style={{ fontSize: '16px' }}
                 />
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -296,14 +339,12 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Loading State */}
             {loading && (
               <div className="py-12">
                 <LoadingSpinner size="large" message="Loading library..." />
               </div>
             )}
 
-            {/* Error State */}
             {error && !loading && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
                 <p className="text-red-600 font-medium">Failed to load books: {error}</p>
@@ -316,7 +357,6 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* No Results */}
             {!loading && !error && searchTerm && filteredBooks.length === 0 && (
               <div className="py-12 text-center">
                 <svg className="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +367,6 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Empty State */}
             {!loading && !error && !searchTerm && filteredBooks.length === 0 && (
               <div className="py-20 text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-slate-100 rounded-full mb-6">
@@ -346,10 +385,8 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Books Grid - English tab with sections */}
             {!loading && !error && activeTab === 'english' && filteredBooks.length > 0 && (
               <div className="space-y-6">
-                {/* Gurudev's Books Section */}
                 {filteredEnglishSections.gurudev.length > 0 && (
                   <div>
                     <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
@@ -360,13 +397,12 @@ const HomePage = () => {
                         </span>
                       </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className={getGridClass()}>
                       {filteredEnglishSections.gurudev.map(renderBookCard)}
                     </div>
                   </div>
                 )}
 
-                {/* Gokul Bhajan Books Section */}
                 {filteredEnglishSections.gokulbhajan.length > 0 && (
                   <div>
                     <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
@@ -377,7 +413,7 @@ const HomePage = () => {
                         </span>
                       </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className={getGridClass()}>
                       {filteredEnglishSections.gokulbhajan.map(renderBookCard)}
                     </div>
                   </div>
@@ -385,10 +421,8 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Books Grid - Tamil tab with sections */}
             {!loading && !error && activeTab === 'tamil' && filteredBooks.length > 0 && (
               <div className="space-y-6">
-                {/* Gurudev's Books Section */}
                 {filteredTamilSections.gurudev.length > 0 && (
                   <div>
                     <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
@@ -399,13 +433,12 @@ const HomePage = () => {
                         </span>
                       </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className={getGridClass()}>
                       {filteredTamilSections.gurudev.map(renderBookCard)}
                     </div>
                   </div>
                 )}
 
-                {/* Gokul Bhajan Books Section */}
                 {filteredTamilSections.gokulbhajan.length > 0 && (
                   <div>
                     <div className="bg-blue-50/30 rounded-lg px-4 py-2 mb-4">
@@ -416,7 +449,7 @@ const HomePage = () => {
                         </span>
                       </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className={getGridClass()}>
                       {filteredTamilSections.gokulbhajan.map(renderBookCard)}
                     </div>
                   </div>
@@ -424,9 +457,8 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Books Grid - Rays tab */}
             {!loading && !error && activeTab === 'rays' && filteredBooks.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+              <div className={getGridClass()}>
                 {filteredBooks.map(renderBookCard)}
               </div>
             )}
@@ -434,11 +466,9 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Book Summary Modal */}
       {selectedBookForSummary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={closeSummaryModal}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] md:max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 md:p-6 relative">
               <button
                 onClick={closeSummaryModal}
@@ -465,10 +495,8 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Modal Body */}
             <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(85vh-220px)] md:max-h-[calc(80vh-200px)]">
               <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                {/* Thumbnail */}
                 <div className="flex-shrink-0 mx-auto md:mx-0">
                   <img
                     src={getBookThumbnail(selectedBookForSummary.id || selectedBookForSummary._id || selectedBookForSummary.book_id)}
@@ -480,7 +508,6 @@ const HomePage = () => {
                   />
                 </div>
 
-                {/* Summary */}
                 <div className="flex-1">
                   <h3 className="text-base md:text-lg font-bold text-slate-800 mb-2 md:mb-3">Book Summary</h3>
                   <div className="prose prose-sm text-slate-600 text-sm md:text-base">
@@ -490,7 +517,6 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-end gap-2 md:gap-3 border-t border-gray-200">
               <button
                 onClick={closeSummaryModal}
