@@ -223,7 +223,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="e.g., Important verse, Key concept..."
-                  className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-slate-800"
                   style={{ fontSize: '16px' }}
                   maxLength={100}
                   autoFocus
@@ -373,7 +373,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="e.g., Important verse, Key concept..."
-                className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-slate-800"
                 maxLength={100}
                 autoFocus
                 onKeyDown={(e) => {

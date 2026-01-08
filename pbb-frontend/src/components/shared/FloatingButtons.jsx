@@ -30,7 +30,12 @@ const FloatingButtons = () => {
   };
 
   const goToHome = () => {
-    navigate('/#library');
+    // First scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Then navigate after a brief delay
+    setTimeout(() => {
+      navigate('/#library');
+    }, 100);
   };
 
   if (!showButtons) return null;

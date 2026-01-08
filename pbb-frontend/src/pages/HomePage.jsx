@@ -13,11 +13,9 @@ const HomePage = () => {
   const [error, setError] = useState(null);
   const [selectedBookForSummary, setSelectedBookForSummary] = useState(null);
   
-  // Use Capacitor platform detection
   const platform = usePlatform();
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Show/hide scroll to top button based on scroll position
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
@@ -27,7 +25,6 @@ const HomePage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Initialize activeTab from URL parameter or default to 'english'
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
     const validTabs = ['english', 'tamil', 'rays'];
@@ -46,7 +43,6 @@ const HomePage = () => {
     } else if (!searchParams.get('tab')) {
       setSearchParams({ tab: 'english' }, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -165,7 +161,8 @@ const HomePage = () => {
         <div
           key={bookId}
           onClick={() => handleBookClick(book)}
-          className="bg-white rounded-xl shadow-md active:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden border border-gray-200 flex"
+          className="bg-white rounded-xl shadow-md active:shadow-lg transition-all duration-200 cursor-pointer border border-gray-200 flex overflow-visible"
+          style={{ height: '128px' }}
         >
           <div className="w-24 flex-shrink-0 bg-gradient-to-br from-blue-50 to-slate-50 relative overflow-hidden">
             <img
@@ -182,15 +179,18 @@ const HomePage = () => {
               }}
             />
           </div>
-          <div className="flex-1 p-3 flex flex-col">
-            <h3 className="font-bold text-sm text-slate-800 line-clamp-2 mb-2">
-              {bookTitle}
-            </h3>
+          <div className="flex-1 flex flex-col p-2.5" style={{ minHeight: 0 }}>
+            <div className="flex-1 overflow-hidden mb-2" style={{ minHeight: 0 }}>
+              <h3 className="font-bold text-sm text-slate-800 line-clamp-2">
+                {bookTitle}
+              </h3>
+            </div>
             <button
               onClick={(e) => handleShowSummary(e, book)}
-              className="mt-auto px-3 py-1.5 text-xs font-medium text-blue-600 active:text-blue-800 active:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1 border border-blue-200"
+              className="px-3 py-1.5 text-xs font-medium text-blue-600 active:text-blue-800 active:bg-blue-50 rounded transition-colors flex items-center justify-center space-x-1 border border-blue-200 flex-shrink-0"
+              style={{ height: '32px' }}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>Details</span>
@@ -468,8 +468,9 @@ const HomePage = () => {
 
       {selectedBookForSummary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={closeSummaryModal}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] md:max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 md:p-6 relative">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden" style={{ height: '85vh', maxHeight: '85vh' }} onClick={(e) => e.stopPropagation()}>
+            {/* Header - 20% of height */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 md:p-6 relative flex-shrink-0" style={{ minHeight: '15%', maxHeight: '20%' }}>
               <button
                 onClick={closeSummaryModal}
                 className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
@@ -478,24 +479,25 @@ const HomePage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-lg md:text-2xl font-bold pr-8">
+              <h2 className="text-lg md:text-2xl font-bold pr-8 line-clamp-2">
                 {selectedBookForSummary.original_book_title || selectedBookForSummary.english_book_title || selectedBookForSummary.title}
               </h2>
-              <div className="text-blue-100 mt-2 space-y-0.5 md:space-y-1">
+              <div className="text-blue-100 mt-2 space-y-0.5 md:space-y-1 text-xs md:text-sm line-clamp-2">
                 {selectedBookForSummary.original_author && (
-                  <p className="text-sm">
+                  <p className="truncate">
                     <span className="font-medium">Original Author:</span> {selectedBookForSummary.original_author}
                   </p>
                 )}
                 {selectedBookForSummary.commentary_author && (
-                  <p className="text-sm">
+                  <p className="truncate">
                     <span className="font-medium">Translation/Commentary:</span> {selectedBookForSummary.commentary_author}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(85vh-220px)] md:max-h-[calc(80vh-200px)]">
+            {/* Scrollable Content - 60% of height */}
+            <div className="p-4 md:p-6 overflow-y-auto flex-1" style={{ minHeight: '55%', maxHeight: '65%' }}>
               <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                 <div className="flex-shrink-0 mx-auto md:mx-0">
                   <img
@@ -508,7 +510,7 @@ const HomePage = () => {
                   />
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-base md:text-lg font-bold text-slate-800 mb-2 md:mb-3">Book Summary</h3>
                   <div className="prose prose-sm text-slate-600 text-sm md:text-base">
                     {selectedBookForSummary.book_summary || selectedBookForSummary.summary || 'No summary available for this book.'}
@@ -517,17 +519,18 @@ const HomePage = () => {
               </div>
             </div>
 
-            <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-end gap-2 md:gap-3 border-t border-gray-200">
+            {/* Footer with Buttons - 15-20% of height */}
+            <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-end gap-2 md:gap-3 border-t border-gray-200 flex-shrink-0" style={{ minHeight: '15%', maxHeight: '20%' }}>
               <button
                 onClick={closeSummaryModal}
-                className="px-4 py-2.5 md:py-2 text-slate-700 hover:bg-gray-200 rounded-lg transition-colors font-medium order-last md:order-first"
+                className="px-4 py-2.5 md:py-2 text-slate-700 hover:bg-gray-200 rounded-lg transition-colors font-medium order-last md:order-first flex-shrink-0"
               >
                 Close
               </button>
               {selectedBookForSummary.pdf_name && (
                 <button
                   onClick={() => handleDownloadPDF(selectedBookForSummary)}
-                  className="px-6 py-2.5 md:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-md"
+                  className="px-6 py-2.5 md:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-md flex-shrink-0"
                 >
                   Download PDF
                 </button>
@@ -537,7 +540,7 @@ const HomePage = () => {
                   closeSummaryModal();
                   handleBookClick(selectedBookForSummary);
                 }}
-                className="px-6 py-2.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-md"
+                className="px-6 py-2.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-md flex-shrink-0"
               >
                 Read Book
               </button>

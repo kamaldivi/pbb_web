@@ -308,10 +308,10 @@ const PageNavigation = ({
                     setErrorMessage('');
                   }}
                   placeholder="e.g., xxvii, a1, 32"
+                  style={{ color: '#1e293b', fontSize: '16px' }}
                   className={`w-full px-3 py-2 text-base border-2 rounded-lg focus:outline-none transition-colors ${
                     errorMessage ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                   }`}
-                  style={{ fontSize: '16px' }}
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleGoToSubmit();
@@ -547,6 +547,7 @@ const PageNavigation = ({
                   setErrorMessage('');
                 }}
                 placeholder="e.g., xxvii, a1, 32"
+                style={{ color: '#1e293b' }}
                 className={`w-full px-3 py-2 text-base border-2 rounded-lg focus:outline-none transition-colors ${
                   errorMessage ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                 }`}

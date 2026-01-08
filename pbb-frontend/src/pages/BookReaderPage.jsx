@@ -32,14 +32,11 @@ const BookReaderPage = () => {
   const [tocError, setTocError] = useState(null);
   const [pagesError, setPagesError] = useState(null);
 
-  const [tocCollapsed, setTocCollapsed] = useState(false);
+  const [tocCollapsed, setTocCollapsed] = useState(true); // Start collapsed by default
   const [showTocModal, setShowTocModal] = useState(false);
 
-  useEffect(() => {
-    if (platform.isMobile) {
-      setTocCollapsed(true);
-    }
-  }, [platform.isMobile]);
+  // No need to auto-collapse on mobile since it's a modal
+  // useEffect removed
 
   useEffect(() => {
     loadBooks();
@@ -159,6 +156,7 @@ const BookReaderPage = () => {
     setCurrentPage(pageNumber);
     setBookmarkKey(prev => prev + 1);
     
+    // Hide TOC after selecting a page
     if (platform.isMobile) {
       setShowTocModal(false);
       setTimeout(() => {
@@ -169,7 +167,13 @@ const BookReaderPage = () => {
           });
         }
       }, 100);
+    } else {
+      setTocCollapsed(true);
     }
+  };
+
+  const toggleTocModal = () => {
+    setShowTocModal(!showTocModal);
   };
 
   const handlePageChange = (pageNumber) => {
@@ -186,208 +190,238 @@ const BookReaderPage = () => {
     }
   };
 
-  const toggleTocModal = () => {
-    setShowTocModal(!showTocModal);
-  };
-
   return (
     <div className="space-y-6">
       <div ref={readerAnchorRef} className="scroll-mt-4"></div>
 
-      {/* Mobile: TOC Button (FAB) - Only show when book is selected */}
-      {platform.isMobile && selectedBook && (
-        <button
-          onClick={toggleTocModal}
-          className="fixed bottom-[180px] right-6 z-40 bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-full shadow-2xl transition-all duration-200 active:scale-95 flex items-center justify-center"
-          title="Table of Contents"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-          </svg>
-        </button>
-      )}
-
+      {/* Mobile & Desktop: TOC Button */}
       {selectedBook && (
-        <section className="flex flex-col md:flex-row gap-4 md:gap-6 relative">
+        <>
+          {/* Desktop Layout */}
           {!platform.isMobile && (
-            <div className={`transition-all duration-300 relative flex-shrink-0 ${
-              tocCollapsed ? 'w-auto' : 'w-full md:w-[30%] md:min-w-[300px]'
-            }`}>
-              {!tocCollapsed && (
-                <TableOfContents
-                  toc={toc}
-                  loading={tocLoading}
-                  error={tocError}
-                  onPageSelect={handleTocPageSelect}
-                  currentPage={currentPage}
-                  onRetry={handleRetryToc}
-                  onCollapse={() => setTocCollapsed(true)}
-                />
-              )}
-
-              {tocCollapsed && (
-                <div className="h-full flex items-start pt-0">
-                  <button
-                    onClick={() => setTocCollapsed(false)}
-                    className="relative bg-gradient-to-br from-blue-50/80 via-slate-50/60 to-gray-50/80 border-2 border-blue-300 hover:border-blue-500 rounded-r-xl shadow-lg transition-all duration-200 hover:shadow-xl group flex flex-col items-center py-4 px-2"
-                    title="Show Table of Contents"
-                  >
-                    <div className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg mb-2 transition-colors flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <svg className="w-5 h-5 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                      </svg>
-                      <div className="writing-mode-vertical text-xs font-bold text-blue-800 tracking-wider" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-                        TABLE OF CONTENTS
-                      </div>
-                    </div>
-                    <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-[1000]">
-                      Click to show TOC
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-col flex-1 relative">
-            {currentPage && totalPages > 0 && (
-              <PageNavigation
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
-                bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                bookId={selectedBook?.id}
-                pages={pages}
-                bookmarkButton={
-                  <BookmarkButton
-                    key={`bookmark-top-${bookmarkKey}`}
-                    bookId={selectedBook?.id}
-                    bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                    pageNumber={currentPage}
-                    onBookmarkChange={(data) => {
-                      console.log('Bookmark changed:', data);
-                      setBookmarkKey(prev => prev + 1);
-                    }}
-                    compactMode={true}
-                  />
-                }
-                fullscreenButton={
-                  <button
-                    onClick={() => {
-                      imageViewerRef.current?.toggleFullscreen();
-                    }}
-                    data-tooltip="Fullscreen"
-                    className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 active:scale-95"
-                    title="View fullscreen"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                    </svg>
-                  </button>
-                }
-              />
-            )}
-
-            <div ref={viewerContainerRef} className="flex-1 image-viewer-container mb-4">
-              <ImageViewer
-                ref={imageViewerRef}
-                bookId={selectedBook?.id}
-                pageNumber={currentPage}
-                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
-                totalPages={totalPages}
-                pages={pages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-
-            {!platform.isMobile && currentPage && totalPages > 0 && (
-              <PageNavigation
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
-                bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                bookId={selectedBook?.id}
-                pages={pages}
-                bookmarkButton={
-                  <BookmarkButton
-                    key={`bookmark-bottom-${bookmarkKey}`}
-                    bookId={selectedBook?.id}
-                    bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
-                    pageNumber={currentPage}
-                    onBookmarkChange={(data) => {
-                      console.log('Bookmark changed:', data);
-                      setBookmarkKey(prev => prev + 1);
-                    }}
-                    compactMode={true}
-                  />
-                }
-                fullscreenButton={
-                  <button
-                    onClick={() => {
-                      imageViewerRef.current?.toggleFullscreen();
-                    }}
-                    data-tooltip="Fullscreen"
-                    className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
-                    title="View fullscreen"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                    </svg>
-                  </button>
-                }
-              />
-            )}
-          </div>
-        </section>
-      )}
-
-      {platform.isMobile && showTocModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={toggleTocModal}>
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1 bg-slate-300 rounded-full"></div>
-            </div>
-
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-slate-50">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <section className="space-y-4">
+              <div className="flex items-start gap-4">
+                {/* TOC Toggle Button */}
+                <button
+                  onClick={() => setTocCollapsed(!tocCollapsed)}
+                  className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                  title={tocCollapsed ? "Show Table of Contents" : "Hide Table of Contents"}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                   </svg>
-                </div>
-                <h3 className="text-lg font-bold text-slate-800">Table of Contents</h3>
-              </div>
-              <button
-                onClick={toggleTocModal}
-                className="p-2 active:bg-slate-200 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                </button>
 
-            <div className="flex-1 overflow-y-auto">
-              <TableOfContents
-                toc={toc}
-                loading={tocLoading}
-                error={tocError}
-                onPageSelect={handleTocPageSelect}
-                currentPage={currentPage}
-                onRetry={handleRetryToc}
-                onCollapse={null}
-              />
-            </div>
+                {/* Main Content Column */}
+                <div className="flex-1 min-w-0">
+                  {/* Page Navigation */}
+                  {currentPage && totalPages > 0 && (
+                    <PageNavigation
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                      pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                      bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                      bookId={selectedBook?.id}
+                      pages={pages}
+                      bookmarkButton={
+                        <BookmarkButton
+                          key={`bookmark-top-${bookmarkKey}`}
+                          bookId={selectedBook?.id}
+                          bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                          pageNumber={currentPage}
+                          onBookmarkChange={(data) => {
+                            console.log('Bookmark changed:', data);
+                            setBookmarkKey(prev => prev + 1);
+                          }}
+                          compactMode={true}
+                        />
+                      }
+                      fullscreenButton={
+                        <button
+                          onClick={() => {
+                            imageViewerRef.current?.toggleFullscreen();
+                          }}
+                          data-tooltip="Fullscreen"
+                          className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 active:scale-95"
+                          title="View fullscreen"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                          </svg>
+                        </button>
+                      }
+                    />
+                  )}
+
+                  {/* Image Viewer */}
+                  <div ref={viewerContainerRef} className="image-viewer-container mb-4">
+                    <ImageViewer
+                      ref={imageViewerRef}
+                      bookId={selectedBook?.id}
+                      pageNumber={currentPage}
+                      pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                      totalPages={totalPages}
+                      pages={pages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+
+                  {/* Bottom Page Navigation */}
+                  {currentPage && totalPages > 0 && (
+                    <PageNavigation
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                      pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                      bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                      bookId={selectedBook?.id}
+                      pages={pages}
+                      bookmarkButton={
+                        <BookmarkButton
+                          key={`bookmark-bottom-${bookmarkKey}`}
+                          bookId={selectedBook?.id}
+                          bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                          pageNumber={currentPage}
+                          onBookmarkChange={(data) => {
+                            console.log('Bookmark changed:', data);
+                            setBookmarkKey(prev => prev + 1);
+                          }}
+                          compactMode={true}
+                        />
+                      }
+                      fullscreenButton={
+                        <button
+                          onClick={() => {
+                            imageViewerRef.current?.toggleFullscreen();
+                          }}
+                          data-tooltip="Fullscreen"
+                          className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
+                          title="View fullscreen"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                          </svg>
+                        </button>
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Mobile Layout - Matching Desktop Style */}
+          {platform.isMobile && (
+            <section className="space-y-4">
+              <div className="flex items-start gap-2">
+                {/* TOC Toggle Button - Same style as desktop */}
+                <button
+                  onClick={() => setShowTocModal(!showTocModal)}
+                  className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 active:from-blue-700 active:to-blue-800 text-white rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center"
+                  title={showTocModal ? "Hide Table of Contents" : "Show Table of Contents"}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                </button>
+
+                {/* Main Content Column */}
+                <div className="flex-1 min-w-0">
+                  {currentPage && totalPages > 0 && (
+                    <PageNavigation
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                      pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                      bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                      bookId={selectedBook?.id}
+                      pages={pages}
+                      bookmarkButton={
+                        <BookmarkButton
+                          key={`bookmark-top-${bookmarkKey}`}
+                          bookId={selectedBook?.id}
+                          bookTitle={selectedBook?.original_book_title || selectedBook?.english_book_title || selectedBook?.title}
+                          pageNumber={currentPage}
+                          onBookmarkChange={(data) => {
+                            console.log('Bookmark changed:', data);
+                            setBookmarkKey(prev => prev + 1);
+                          }}
+                          compactMode={true}
+                        />
+                      }
+                      fullscreenButton={
+                        <button
+                          onClick={() => {
+                            imageViewerRef.current?.toggleFullscreen();
+                          }}
+                          data-tooltip="Fullscreen"
+                          className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 active:scale-95"
+                          title="View fullscreen"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                          </svg>
+                        </button>
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Image Viewer - Full width below the TOC button + Nav bar row */}
+              <div ref={viewerContainerRef} className="image-viewer-container">
+                <ImageViewer
+                  ref={imageViewerRef}
+                  bookId={selectedBook?.id}
+                  pageNumber={currentPage}
+                  pageLabel={pages.find(p => p.page_number === currentPage)?.page_label}
+                  totalPages={totalPages}
+                  pages={pages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      {/* Desktop: TOC Overlay Modal (when toggled on) */}
+      {!platform.isMobile && selectedBook && !tocCollapsed && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-start p-4 pt-24" onClick={() => setTocCollapsed(true)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-8rem)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TableOfContents
+              toc={toc}
+              loading={tocLoading}
+              error={tocError}
+              onPageSelect={handleTocPageSelect}
+              currentPage={currentPage}
+              onRetry={handleRetryToc}
+              onCollapse={() => setTocCollapsed(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: TOC Overlay Modal (matching desktop style) */}
+      {platform.isMobile && showTocModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-start p-4 pt-24" onClick={() => setShowTocModal(false)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-8rem)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TableOfContents
+              toc={toc}
+              loading={tocLoading}
+              error={tocError}
+              onPageSelect={handleTocPageSelect}
+              currentPage={currentPage}
+              onRetry={handleRetryToc}
+              onCollapse={() => setShowTocModal(false)}
+            />
           </div>
         </div>
       )}
