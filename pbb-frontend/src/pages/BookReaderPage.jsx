@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { usePlatform } from '../services/usePlatform';
 import TableOfContents from '../components/reader/TableOfContents';
@@ -8,53 +8,43 @@ import ImageViewer from '../components/reader/ImageViewer';
 import BookmarkButton from '../components/bookmark/BookmarkButton';
 
 const BookReaderPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
-  // Use Capacitor platform detection
   const platform = usePlatform();
 
-  // Refs
   const readerAnchorRef = useRef(null);
   const imageViewerRef = useRef(null);
   const viewerContainerRef = useRef(null);
 
-  // State management
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
   const [toc, setToc] = useState(null);
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(null);
   const [totalPages, setTotalPages] = useState(0);
-  const [bookmarkKey, setBookmarkKey] = useState(0); // Force re-render of bookmark buttons
+  const [bookmarkKey, setBookmarkKey] = useState(0);
 
-  // Loading states
   const [booksLoading, setBooksLoading] = useState(true);
   const [tocLoading, setTocLoading] = useState(false);
   const [pagesLoading, setPagesLoading] = useState(false);
 
-  // Error states
   const [booksError, setBooksError] = useState(null);
   const [tocError, setTocError] = useState(null);
   const [pagesError, setPagesError] = useState(null);
 
-  // UI state
   const [tocCollapsed, setTocCollapsed] = useState(false);
   const [showTocModal, setShowTocModal] = useState(false);
 
-  // Auto-collapse TOC on mobile platforms
   useEffect(() => {
     if (platform.isMobile) {
       setTocCollapsed(true);
     }
   }, [platform.isMobile]);
 
-  // Load books on mount
   useEffect(() => {
     loadBooks();
   }, []);
 
-  // Handle book_id and page from URL parameters
   useEffect(() => {
     const bookIdFromUrl = searchParams.get('book_id');
     const pageFromUrl = searchParams.get('page');
@@ -84,7 +74,6 @@ const BookReaderPage = () => {
     }
   }, [searchParams, books, selectedBook]);
 
-  // Load TOC and pages when book changes
   useEffect(() => {
     if (selectedBook) {
       loadTOC(selectedBook.id);
@@ -163,25 +152,13 @@ const BookReaderPage = () => {
   const scrollToReadingMode = () => {
     if (readerAnchorRef.current) {
       readerAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setShowTopTab(true);
     }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setShowTopTab(false);
-  };
-
-  const handleBackToLibrary = () => {
-    const returnTab = searchParams.get('return_tab') || 'english';
-    navigate(`/?tab=${returnTab}#library`);
   };
 
   const handleTocPageSelect = (pageNumber) => {
     setCurrentPage(pageNumber);
-    setBookmarkKey(prev => prev + 1); // Force bookmark buttons to re-render
+    setBookmarkKey(prev => prev + 1);
     
-    // On mobile, close TOC modal and scroll to viewer
     if (platform.isMobile) {
       setShowTocModal(false);
       setTimeout(() => {
@@ -197,7 +174,7 @@ const BookReaderPage = () => {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    setBookmarkKey(prev => prev + 1); // Force bookmark buttons to re-render
+    setBookmarkKey(prev => prev + 1);
     if (!platform.isMobile) {
       setTimeout(() => scrollToReadingMode(), 100);
     }
@@ -215,71 +192,23 @@ const BookReaderPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Reading Mode Anchor Point */}
       <div ref={readerAnchorRef} className="scroll-mt-4"></div>
 
-      {/* Floating Action Buttons - Mobile */}
-      {platform.isMobile && showTopTab && (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-          {/* Table of Contents Button */}
-          <button
-            onClick={toggleTocModal}
-            className="bg-blue-600 active:bg-blue-700 text-white p-4 rounded-full shadow-2xl transition-all duration-200 active:scale-95 flex items-center justify-center"
-            title="Table of Contents"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          </button>
-
-          {/* Back to Library Button */}
-          <button
-            onClick={handleBackToLibrary}
-            className="bg-slate-600 active:bg-slate-700 text-white p-4 rounded-full shadow-2xl transition-all duration-200 active:scale-95 flex items-center justify-center"
-            title="Back to Library"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-          </button>
-
-          {/* Scroll to Top Button */}
-          <button
-            onClick={scrollToTop}
-            className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-4 rounded-full shadow-2xl transition-all duration-200 active:scale-95 flex items-center justify-center"
-            title="Back to Top"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
-          </button>
-        </div>
+      {/* Mobile: TOC Button (FAB) - Only show when book is selected */}
+      {platform.isMobile && selectedBook && (
+        <button
+          onClick={toggleTocModal}
+          className="fixed bottom-[180px] right-6 z-40 bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-full shadow-2xl transition-all duration-200 active:scale-95 flex items-center justify-center"
+          title="Table of Contents"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+        </button>
       )}
 
-      {/* Desktop Side Buttons */}
-      {!platform.isMobile && showTopTab && (
-        <div className="fixed top-1/2 right-0 -translate-y-1/2 z-50">
-          <button
-            onClick={scrollToTop}
-            className="bg-gradient-to-l from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-2xl transition-all duration-300 hover:shadow-blue-500/50 rounded-l-xl flex flex-col items-center py-4 px-3 group"
-            title="Back to top"
-          >
-            <div className="bg-white/20 group-hover:bg-white/30 p-2 rounded-lg transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-            </div>
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
-              Back to Top
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* Two Column Layout: TOC + Page Viewer */}
       {selectedBook && (
         <section className="flex flex-col md:flex-row gap-4 md:gap-6 relative">
-          {/* Left Column: Table of Contents - Desktop Only */}
           {!platform.isMobile && (
             <div className={`transition-all duration-300 relative flex-shrink-0 ${
               tocCollapsed ? 'w-auto' : 'w-full md:w-[30%] md:min-w-[300px]'
@@ -325,9 +254,7 @@ const BookReaderPage = () => {
             </div>
           )}
 
-          {/* Right Column: Page Navigation + Image Viewer */}
           <div className="flex flex-col flex-1 relative">
-            {/* Page Navigation Bar (TOP) */}
             {currentPage && totalPages > 0 && (
               <PageNavigation
                 currentPage={currentPage}
@@ -345,7 +272,7 @@ const BookReaderPage = () => {
                     pageNumber={currentPage}
                     onBookmarkChange={(data) => {
                       console.log('Bookmark changed:', data);
-                      setBookmarkKey(prev => prev + 1); // Sync both bookmark buttons
+                      setBookmarkKey(prev => prev + 1);
                     }}
                     compactMode={true}
                   />
@@ -367,7 +294,6 @@ const BookReaderPage = () => {
               />
             )}
 
-            {/* Page Image Viewer */}
             <div ref={viewerContainerRef} className="flex-1 image-viewer-container mb-4">
               <ImageViewer
                 ref={imageViewerRef}
@@ -380,7 +306,6 @@ const BookReaderPage = () => {
               />
             </div>
 
-            {/* Page Navigation Bar (BOTTOM) - Desktop Only */}
             {!platform.isMobile && currentPage && totalPages > 0 && (
               <PageNavigation
                 currentPage={currentPage}
@@ -398,7 +323,7 @@ const BookReaderPage = () => {
                     pageNumber={currentPage}
                     onBookmarkChange={(data) => {
                       console.log('Bookmark changed:', data);
-                      setBookmarkKey(prev => prev + 1); // Sync both bookmark buttons
+                      setBookmarkKey(prev => prev + 1);
                     }}
                     compactMode={true}
                   />
@@ -423,19 +348,16 @@ const BookReaderPage = () => {
         </section>
       )}
 
-      {/* Mobile: TOC Modal - Bottom Sheet Style */}
       {platform.isMobile && showTocModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={toggleTocModal}>
           <div 
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up" 
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag Handle */}
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1 bg-slate-300 rounded-full"></div>
             </div>
 
-            {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-slate-50">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -455,7 +377,6 @@ const BookReaderPage = () => {
               </button>
             </div>
 
-            {/* TOC Content */}
             <div className="flex-1 overflow-y-auto">
               <TableOfContents
                 toc={toc}
@@ -471,7 +392,6 @@ const BookReaderPage = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!selectedBook && !booksLoading && (
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-12 border border-white/20">
           <div className="text-center">

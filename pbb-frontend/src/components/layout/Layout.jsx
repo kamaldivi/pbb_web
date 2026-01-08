@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Navigation from './Navigation';
 import Footer from './Footer';
+import FloatingButtons from '../shared/FloatingButtons';
 
 const Layout = () => {
   return (
@@ -14,6 +15,8 @@ const Layout = () => {
         </div>
       </main>
       <Footer />
+      {/* Global floating buttons for all pages */}
+      <FloatingButtons />
     </div>
   );
 };

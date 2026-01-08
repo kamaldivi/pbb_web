@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePlatform } from '../services/usePlatform';
+import { usePlatform } from '../../services/usePlatform';
 
 /**
  * Global floating action buttons that appear on all pages after scrolling
  * - Mobile: Stack of circular FABs in bottom-right (Home + Back to Top)
- * - Desktop: Side button on right edge (Back to Top)
+ * - Desktop: Consistent circular button in bottom-right (Back to Top)
  */
 const FloatingButtons = () => {
   const navigate = useNavigate();
@@ -66,22 +66,17 @@ const FloatingButtons = () => {
     );
   }
 
-  // Desktop: Side button on right edge
+  // Desktop: Consistent circular button in bottom-right (same as mobile now)
   return (
-    <div className="fixed top-1/2 right-0 -translate-y-1/2 z-50">
+    <div className="fixed bottom-6 right-6 z-50">
       <button
         onClick={scrollToTop}
-        className="bg-gradient-to-l from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-2xl transition-all duration-300 hover:shadow-blue-500/50 rounded-l-xl flex flex-col items-center py-4 px-3 group"
+        className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white p-4 rounded-full shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center"
         title="Back to top"
       >
-        <div className="bg-white/20 group-hover:bg-white/30 p-2 rounded-lg transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </div>
-        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
-          Back to Top
-        </span>
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
       </button>
     </div>
   );

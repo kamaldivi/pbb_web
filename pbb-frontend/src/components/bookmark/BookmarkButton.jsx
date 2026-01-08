@@ -2,24 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { addBookmark, deleteBookmark, isPageBookmarked } from '../../services/bookmarkService';
 
-/**
- * BookmarkButton Component
- * Displays a button to add/remove bookmarks for the current page
- * Shows visual indicator if page is already bookmarked
- *
- * @param {boolean} compactMode - If true, shows icon-only buttons suitable for navigation bar
- */
 const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compactMode = false }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentBookmark, setCurrentBookmark] = useState(null);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [customName, setCustomName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  // Check if current page is bookmarked on mount and when page changes
   useEffect(() => {
     if (bookId && pageNumber) {
       const bookmark = isPageBookmarked(bookId, pageNumber);
@@ -28,12 +19,12 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
     }
   }, [bookId, pageNumber]);
 
-  // Handle click outside to close dropdown in compact mode
   useEffect(() => {
     if (!compactMode || !showNameDialog) return;
 
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
         handleCancelDialog();
       }
     };
@@ -54,7 +45,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
 
     try {
       if (isBookmarked && currentBookmark) {
-        // Remove bookmark
         const success = deleteBookmark(currentBookmark.id);
         if (success) {
           setIsBookmarked(false);
@@ -62,7 +52,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
           onBookmarkChange?.({ action: 'removed', bookId, pageNumber });
         }
       } else {
-        // Add bookmark without custom name
         const newBookmark = addBookmark({
           bookId,
           bookTitle,
@@ -82,17 +71,9 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
   };
 
   const handleBookmarkWithName = useCallback(() => {
-    // Calculate position for dropdown
-    if (compactMode && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 8, // 8px below the button
-        left: rect.left
-      });
-    }
     setShowNameDialog(true);
     setCustomName(currentBookmark?.customName || '');
-  }, [compactMode, currentBookmark]);
+  }, [currentBookmark]);
 
   const handleSaveWithName = async () => {
     if (!bookId || !bookTitle || !pageNumber) {
@@ -127,7 +108,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
     setCustomName('');
   };
 
-  // Compact mode for navigation bar
   if (compactMode) {
     return (
       <>
@@ -158,7 +138,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
           }
         `}</style>
         <div className="relative flex items-center gap-1">
-          {/* Bookmark Toggle Icon */}
           <button
             onClick={handleQuickBookmark}
             disabled={isProcessing}
@@ -171,7 +150,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               }
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
-            title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
           >
             <svg
               className={`w-6 h-6 ${isBookmarked ? 'fill-current' : 'fill-none'}`}
@@ -187,7 +165,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
             </svg>
           </button>
 
-          {/* Edit Name Icon (only when bookmarked) */}
           {isBookmarked && (
             <button
               ref={buttonRef}
@@ -195,7 +172,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               disabled={isProcessing}
               data-tooltip="Edit Bookmark"
               className="bookmark-tooltip p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Edit bookmark name"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path
@@ -208,23 +184,17 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
           )}
         </div>
 
-        {/* Portal for dropdown - renders at document.body level */}
         {showNameDialog && createPortal(
           <>
-            {/* Backdrop overlay when dropdown is open */}
             <div
-              className="fixed inset-0 z-[9998]"
+              className="fixed inset-0 bg-black/50 z-[9998] flex items-center justify-center p-4"
               onClick={handleCancelDialog}
             />
 
-            {/* Custom Name Dropdown (fixed positioning to escape stacking context) */}
             <div
               ref={dropdownRef}
-              className="fixed w-80 bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-5 z-[9999]"
-              style={{
-                top: `${dropdownPosition.top}px`,
-                left: `${dropdownPosition.left}px`
-              }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-5 z-[9999]"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -254,6 +224,7 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="e.g., Important verse, Key concept..."
                   className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                  style={{ fontSize: '16px' }}
                   maxLength={100}
                   autoFocus
                   onKeyDown={(e) => {
@@ -293,11 +264,10 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
     );
   }
 
-  // Full mode (original design)
+  // Full mode (unchanged)
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* Quick Bookmark Toggle Button */}
         <button
           onClick={handleQuickBookmark}
           disabled={isProcessing}
@@ -311,7 +281,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
                 : 'bg-white hover:bg-blue-50 text-slate-700 border-2 border-blue-300'
             }
           `}
-          title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
         >
           <svg
             className={`w-5 h-5 ${isBookmarked ? 'fill-current' : 'fill-none'}`}
@@ -330,7 +299,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
           </span>
         </button>
 
-        {/* Add Bookmark with Custom Name Button */}
         {!isBookmarked && (
           <button
             onClick={handleBookmarkWithName}
@@ -343,7 +311,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               transition-all duration-200 shadow-md hover:shadow-lg
               disabled:opacity-50 disabled:cursor-not-allowed
             "
-            title="Add bookmark with custom name"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -352,7 +319,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
           </button>
         )}
 
-        {/* Edit Name Button (when bookmarked) */}
         {isBookmarked && (
           <button
             onClick={handleBookmarkWithName}
@@ -364,7 +330,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
               transition-all duration-200 shadow-sm hover:shadow-md
               disabled:opacity-50 disabled:cursor-not-allowed
             "
-            title="Edit bookmark name"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path
@@ -378,7 +343,6 @@ const BookmarkButton = ({ bookId, bookTitle, pageNumber, onBookmarkChange, compa
         )}
       </div>
 
-      {/* Custom Name Dialog */}
       {showNameDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">

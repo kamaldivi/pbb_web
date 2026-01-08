@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { usePlatform } from '../../services/usePlatform';
 
 const PageNavigation = ({
   currentPage,
@@ -10,56 +11,39 @@ const PageNavigation = ({
   bookTitle,
   bookmarkButton,
   fullscreenButton,
-  pages = [],  // Array of page objects with page_number and page_label
-  bookId  // Add bookId for URL generation
+  pages = [],
+  bookId
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const platform = usePlatform();
   const [showGoToDialog, setShowGoToDialog] = useState(false);
   const [goToInput, setGoToInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [shareMenuPosition, setShareMenuPosition] = useState({ top: 0, left: 0 });
   const [linkCopied, setLinkCopied] = useState(false);
-  const dropdownRef = useRef(null);
-  const buttonRef = useRef(null);
   const shareButtonRef = useRef(null);
   const shareMenuRef = useRef(null);
+  const goToButtonRef = useRef(null);
+  const goToDialogRef = useRef(null);
 
-  // Handle click outside to close dropdown
   useEffect(() => {
-    if (!showGoToDialog) return;
+    if (!showGoToDialog && !showShareMenu) return;
 
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (showGoToDialog && goToDialogRef.current && !goToDialogRef.current.contains(event.target) && !goToButtonRef.current?.contains(event.target)) {
         setShowGoToDialog(false);
         setGoToInput('');
         setErrorMessage('');
       }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showGoToDialog]);
-
-  // Handle click outside to close share menu
-  useEffect(() => {
-    if (!showShareMenu) return;
-
-    const handleClickOutside = (event) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
+      if (showShareMenu && shareMenuRef.current && !shareMenuRef.current.contains(event.target) && !shareButtonRef.current?.contains(event.target)) {
         setShowShareMenu(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showShareMenu]);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showGoToDialog, showShareMenu]);
 
   const handlePrevious = () => {
     if (currentPage > 1) {
@@ -74,25 +58,6 @@ const PageNavigation = ({
   };
 
   const handleGoToPage = useCallback(() => {
-    // Calculate position for dropdown
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const isMobile = window.innerWidth < 768;
-
-      if (isMobile) {
-        // On mobile, center the dialog vertically
-        setDropdownPosition({
-          top: window.innerHeight / 2 - 150, // Center vertically (approximate height 300px)
-          left: rect.left
-        });
-      } else {
-        // On desktop, position below button
-        setDropdownPosition({
-          top: rect.bottom + 8, // 8px below the button
-          left: rect.left
-        });
-      }
-    }
     setShowGoToDialog(true);
     setErrorMessage('');
     setGoToInput('');
@@ -105,19 +70,15 @@ const PageNavigation = ({
     }
 
     const input = goToInput.trim();
-
-    // Try to find page by label first (case-insensitive)
     let foundPage = pages.find(p =>
       p.page_label && p.page_label.toLowerCase() === input.toLowerCase()
     );
 
-    // If not found by label, try as page number
     if (!foundPage) {
       const pageNum = parseInt(input, 10);
       if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
         foundPage = pages.find(p => p.page_number === pageNum);
         if (!foundPage) {
-          // Page number is valid but not in pages array, use it anyway
           onPageChange(pageNum);
           setShowGoToDialog(false);
           setGoToInput('');
@@ -137,7 +98,6 @@ const PageNavigation = ({
     }
   };
 
-  // Share functionality
   const generateShareUrl = () => {
     const baseUrl = window.location.origin;
     return `${baseUrl}/reader?book_id=${bookId}&page=${currentPage}`;
@@ -150,24 +110,6 @@ const PageNavigation = ({
   };
 
   const handleShareClick = useCallback(() => {
-    if (shareButtonRef.current) {
-      const rect = shareButtonRef.current.getBoundingClientRect();
-      const isMobile = window.innerWidth < 768;
-
-      if (isMobile) {
-        // On mobile, center the menu vertically
-        setShareMenuPosition({
-          top: window.innerHeight / 2 - 150, // Center vertically
-          left: rect.left
-        });
-      } else {
-        // On desktop, position below button
-        setShareMenuPosition({
-          top: rect.bottom + 8,
-          left: rect.left
-        });
-      }
-    }
     setShowShareMenu(true);
   }, []);
 
@@ -179,8 +121,6 @@ const PageNavigation = ({
       setTimeout(() => setLinkCopied(false), 2000);
       setShowShareMenu(false);
     } catch (err) {
-      console.error('Failed to copy link:', err);
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = url;
       document.body.appendChild(textArea);
@@ -222,12 +162,251 @@ const PageNavigation = ({
 
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === totalPages;
-
-  // Format: Page xxvii (56 of 204)
   const pageDisplay = pageLabel
     ? `Page ${pageLabel} (${currentPage} of ${totalPages})`
     : `Page ${currentPage} of ${totalPages}`;
 
+  if (platform.isMobile) {
+    return (
+      <>
+        <style>{`
+          .tooltip-button {
+            position: relative;
+          }
+          .tooltip-button::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background-color: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 1000;
+          }
+          .tooltip-button:hover::after {
+            opacity: 1;
+          }
+        `}</style>
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 px-2 py-2 mb-3">
+          <div className="text-center mb-2 px-1">
+            <div className="text-sm font-bold text-slate-800 truncate">
+              {bookTitle}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                ref={shareButtonRef}
+                onClick={handleShareClick}
+                data-tooltip={linkCopied ? 'Copied!' : 'Share'}
+                className={`tooltip-button p-2 rounded-lg transition-all duration-200 active:scale-95 ${
+                  linkCopied ? 'text-green-600 hover:bg-green-50' : 'text-blue-600 hover:bg-blue-50 active:bg-blue-100'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 flex-1 min-w-0 justify-center">
+              <button
+                onClick={handlePrevious}
+                disabled={isFirstPage}
+                data-tooltip="Previous"
+                className={`tooltip-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                  isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 active:bg-blue-100 active:scale-95'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div className="text-center min-w-0 px-1">
+                <div className="text-xs text-slate-600 truncate">
+                  {pageLabel ? `${pageLabel}` : `${currentPage}`}
+                </div>
+                <div className="text-xs text-slate-500">
+                  of {totalPages}
+                </div>
+              </div>
+
+              <button
+                onClick={handleNext}
+                disabled={isLastPage}
+                data-tooltip="Next"
+                className={`tooltip-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                  isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 active:bg-blue-100 active:scale-95'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {bookmarkButton}
+              <button
+                ref={goToButtonRef}
+                onClick={handleGoToPage}
+                data-tooltip="Go To"
+                className="tooltip-button p-2 rounded-lg text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 active:scale-95"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h8m0 0-3-3m3 3-3 3" />
+                </svg>
+              </button>
+              {fullscreenButton}
+            </div>
+          </div>
+        </div>
+
+        {showGoToDialog && createPortal(
+          <>
+            <div className="fixed inset-0 bg-black/50 z-[9998] flex items-center justify-center p-4" onClick={() => {
+              setShowGoToDialog(false);
+              setGoToInput('');
+              setErrorMessage('');
+            }} />
+
+            <div
+              ref={goToDialogRef}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h8m0 0-3-3m3 3-3 3" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">Go To Page</h3>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Enter page label:
+                </label>
+                <input
+                  type="text"
+                  value={goToInput}
+                  onChange={(e) => {
+                    setGoToInput(e.target.value);
+                    setErrorMessage('');
+                  }}
+                  placeholder="e.g., xxvii, a1, 32"
+                  className={`w-full px-3 py-2 text-base border-2 rounded-lg focus:outline-none transition-colors ${
+                    errorMessage ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                  }`}
+                  style={{ fontSize: '16px' }}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleGoToSubmit();
+                    else if (e.key === 'Escape') {
+                      setShowGoToDialog(false);
+                      setGoToInput('');
+                      setErrorMessage('');
+                    }
+                  }}
+                />
+                {errorMessage && <p className="text-xs text-red-600 mt-1.5 font-medium">{errorMessage}</p>}
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Current: {pageLabel || currentPage} ({currentPage}/{totalPages})
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowGoToDialog(false);
+                    setGoToInput('');
+                    setErrorMessage('');
+                  }}
+                  className="flex-1 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGoToSubmit}
+                  disabled={!goToInput.trim()}
+                  className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Go
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+        {showShareMenu && createPortal(
+          <>
+            <div className="fixed inset-0 bg-black/50 z-[9998] flex items-center justify-center p-4" onClick={() => setShowShareMenu(false)} />
+
+            <div
+              ref={shareMenuRef}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-xs bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">Share Page</h3>
+              </div>
+
+              <div className="space-y-2">
+                <button onClick={handleWhatsAppShare} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors text-left group">
+                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                  </div>
+                  <span className="text-slate-700 font-medium">WhatsApp</span>
+                </button>
+
+                <button onClick={handleEmailShare} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-50 transition-colors text-left group">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-slate-700 font-medium">Email Link</span>
+                </button>
+
+                <button onClick={handleCopyLink} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors text-left group">
+                  <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-slate-700 font-medium">Copy Link</span>
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+      </>
+    );
+  }
+
+  // Desktop layout
   return (
     <>
       <style>{`
@@ -258,33 +437,24 @@ const PageNavigation = ({
       `}</style>
       <div className="bg-white rounded-xl shadow-md border border-slate-200 px-3 md:px-4 py-3 md:py-2.5 mb-3">
         <div className="flex items-center justify-between gap-2 md:gap-3">
-          {/* Left: Library + Share + Bookmark Buttons */}
           <div className="flex items-center gap-2 md:gap-2">
-            {/* Back to Library Button */}
             <button
               onClick={handleBackToLibrary}
               data-tooltip="Back to Library"
               className="tooltip-button p-2.5 md:p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
-              title="Back to library"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </button>
 
-            {/* Share Button */}
             <button
               ref={shareButtonRef}
               onClick={handleShareClick}
               data-tooltip={linkCopied ? 'Link Copied!' : 'Share Page'}
-              className={`
-                tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200 active:scale-95
-                ${linkCopied
-                  ? 'text-green-600 hover:bg-green-50'
-                  : 'text-blue-600 hover:bg-blue-50'
-                }
-              `}
-              title="Share this page"
+              className={`tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200 active:scale-95 ${
+                linkCopied ? 'text-green-600 hover:bg-green-50' : 'text-blue-600 hover:bg-blue-50'
+              }`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -294,98 +464,66 @@ const PageNavigation = ({
             {bookmarkButton}
           </div>
 
-          {/* Center-Left: Previous Button */}
           <button
             onClick={handlePrevious}
             disabled={isFirstPage}
             data-tooltip="Previous Page"
-            className={`
-              tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200
-              ${isFirstPage
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'text-blue-600 hover:bg-blue-50 active:scale-95'
-              }
-            `}
-            title="Previous page"
+            className={`tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200 ${
+              isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 active:scale-95'
+            }`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
-          {/* Center: Book Title + Page Info */}
           <div className="flex-1 min-w-0 text-center">
-            <div className="text-sm font-bold text-slate-800 truncate">
-              {bookTitle}
-            </div>
-            <div className="text-xs text-slate-600">
-              {pageDisplay}
-            </div>
+            <div className="text-sm font-bold text-slate-800 truncate">{bookTitle}</div>
+            <div className="text-xs text-slate-600">{pageDisplay}</div>
           </div>
 
-          {/* Center-Right: Next Button */}
           <button
             onClick={handleNext}
             disabled={isLastPage}
             data-tooltip="Next Page"
-            className={`
-              tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200
-              ${isLastPage
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'text-blue-600 hover:bg-blue-50 active:scale-95'
-              }
-            `}
-            title="Next page"
+            className={`tooltip-button p-2.5 md:p-2 rounded-lg transition-all duration-200 ${
+              isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 active:scale-95'
+            }`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
-          {/* Right: Go To + Fullscreen Buttons */}
           <div className="flex items-center gap-2">
-            {/* Go To Button */}
             <button
-              ref={buttonRef}
+              ref={goToButtonRef}
               onClick={handleGoToPage}
               data-tooltip="Go to Page"
               className="tooltip-button p-2.5 md:p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 active:scale-95"
-              title="Go to specific page"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h8m0 0-3-3m3 3-3 3" />
               </svg>
             </button>
-
-            {/* Fullscreen Button */}
             {fullscreenButton}
           </div>
         </div>
       </div>
 
-      {/* Go To Page Dropdown */}
       {showGoToDialog && createPortal(
         <>
-          {/* Backdrop overlay */}
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={() => {
-              setShowGoToDialog(false);
-              setGoToInput('');
-              setErrorMessage('');
-            }}
-          />
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={() => {
+            setShowGoToDialog(false);
+            setGoToInput('');
+            setErrorMessage('');
+          }} />
 
-          {/* Dropdown positioned below button */}
           <div
-            ref={dropdownRef}
-            className="fixed w-[calc(100vw-2rem)] max-w-sm bg-white rounded-lg shadow-2xl border-2 border-blue-200 p-3 md:p-4 z-[9999]"
-            style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${Math.max(16, dropdownPosition.left)}px`,
-              right: '1rem'
-            }}
+            ref={goToDialogRef}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999] mx-4"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -394,11 +532,11 @@ const PageNavigation = ({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h8m0 0-3-3m3 3-3 3" />
                 </svg>
               </div>
-              <h3 className="text-base md:text-lg font-bold text-slate-800">Go To Page</h3>
+              <h3 className="text-lg font-bold text-slate-800">Go To Page</h3>
             </div>
 
             <div className="mb-3">
-              <label className="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                 Enter page label:
               </label>
               <input
@@ -410,33 +548,25 @@ const PageNavigation = ({
                 }}
                 placeholder="e.g., xxvii, a1, 32"
                 className={`w-full px-3 py-2 text-base border-2 rounded-lg focus:outline-none transition-colors ${
-                  errorMessage
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-slate-300 focus:border-blue-500'
+                  errorMessage ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                 }`}
-                style={{ fontSize: '16px' }}
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleGoToSubmit();
-                  } else if (e.key === 'Escape') {
+                  if (e.key === 'Enter') handleGoToSubmit();
+                  else if (e.key === 'Escape') {
                     setShowGoToDialog(false);
                     setGoToInput('');
                     setErrorMessage('');
                   }
                 }}
               />
-              {errorMessage && (
-                <p className="text-xs text-red-600 mt-1.5 font-medium">
-                  {errorMessage}
-                </p>
-              )}
+              {errorMessage && <p className="text-xs text-red-600 mt-1.5 font-medium">{errorMessage}</p>}
               <p className="text-xs text-slate-500 mt-1.5">
                 Current: {pageLabel || currentPage} ({currentPage}/{totalPages})
               </p>
             </div>
 
-            <div className="flex flex-col-reverse md:flex-row gap-2">
+            <div className="flex gap-2">
               <button
                 onClick={() => {
                   setShowGoToDialog(false);
@@ -460,24 +590,14 @@ const PageNavigation = ({
         document.body
       )}
 
-      {/* Share Menu Dropdown */}
       {showShareMenu && createPortal(
         <>
-          {/* Backdrop overlay */}
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={() => setShowShareMenu(false)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={() => setShowShareMenu(false)} />
 
-          {/* Share menu positioned below button */}
           <div
             ref={shareMenuRef}
-            className="fixed w-[calc(100vw-2rem)] max-w-xs bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999]"
-            style={{
-              top: `${shareMenuPosition.top}px`,
-              left: `${Math.max(16, shareMenuPosition.left)}px`,
-              right: '1rem'
-            }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xs bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-4 z-[9999] mx-4"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
@@ -489,11 +609,7 @@ const PageNavigation = ({
             </div>
 
             <div className="space-y-2">
-              {/* WhatsApp Option */}
-              <button
-                onClick={handleWhatsAppShare}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors text-left group"
-              >
+              <button onClick={handleWhatsAppShare} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors text-left group">
                 <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -502,11 +618,7 @@ const PageNavigation = ({
                 <span className="text-slate-700 font-medium">WhatsApp</span>
               </button>
 
-              {/* Email Option */}
-              <button
-                onClick={handleEmailShare}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-50 transition-colors text-left group"
-              >
+              <button onClick={handleEmailShare} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-50 transition-colors text-left group">
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -515,11 +627,7 @@ const PageNavigation = ({
                 <span className="text-slate-700 font-medium">Email Link</span>
               </button>
 
-              {/* Copy Link Option */}
-              <button
-                onClick={handleCopyLink}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors text-left group"
-              >
+              <button onClick={handleCopyLink} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors text-left group">
                 <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
