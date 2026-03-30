@@ -7,7 +7,9 @@ import BookSearchPage from './pages/BookSearchPage';
 import GlossarySearchPage from './pages/GlossarySearchPage';
 import VerseLookupPage from './pages/VerseLookupPage';
 import ChatPage from './pages/ChatPage';
-import TestbedPage from './pages/TestbedPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TestBedPage from './pages/TestBedPage';
 
 export const router = createBrowserRouter([
   {
@@ -43,9 +45,17 @@ export const router = createBrowserRouter([
         element: <ChatPage />,
       },
       {
-        path: 'testbed',
-        element: <TestbedPage />,
+        path: 'contact',
+        element: <ContactPage />,
+      },
+      {
+        path: 'privacy',
+        element: <PrivacyPage />,
       },
     ],
+  },
+  {
+    path: 'testbed',
+    element: <TestBedPage />,
   },
 ]);

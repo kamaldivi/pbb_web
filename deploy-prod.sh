@@ -23,6 +23,10 @@ echo "Let's Encrypt certificates found. Proceeding with deployment..."
 echo "Stopping existing containers..."
 docker-compose -f docker-compose.prod.yml down
 
+# Clear Docker build cache to prevent stale layer errors
+echo "Clearing Docker build cache..."
+docker builder prune -f
+
 # Build and start services
 echo "Building and starting services with SSL..."
 docker-compose -f docker-compose.prod.yml up -d --build

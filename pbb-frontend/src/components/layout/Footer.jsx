@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   return (
     <footer className="bg-black text-white py-12 mt-16">
@@ -6,8 +8,8 @@ const Footer = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <img
-              src="/images/gokul_bhajan_logo.png"
-              alt="Gokul Bhajan Logo"
+              src="/images/gokulbhavan_logo.png"
+              alt="Gokul Bhavan Logo"
               className="w-32 h-32 object-contain"
             />
           </div>
@@ -35,13 +37,12 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-gray-700 mt-8 pt-6 text-center space-y-2">
           <p className="text-gray-400">
-            © Gaudiya Vedanta Publications – Some rights reserved. Books and Content licensed under CC BY-ND 3.0
+            © Gokul Bhavan Gaudiya Matha – Software rights reserved. © Gaudiya Vedanta Publications – Some content rights reserved.
           </p>
           <p className="text-gray-400">
-            Permissions: <a href="http://purebhakti.com/pluslicense" className="text-yellow-400 hover:text-yellow-300 underline" target="_blank" rel="noopener noreferrer">purebhakti.com/pluslicense</a> | <a href="mailto:gvp.contactus@gmail.com" className="text-yellow-400 hover:text-yellow-300 underline">gvp.contactus@gmail.com</a>
-          </p>
-          <p className="text-gray-400">
-            © Gokul Bhajan Gaudiya Matha – Software rights reserved.
+            <Link to="/privacy" className="text-yellow-400 hover:text-yellow-300 underline">Privacy Policy</Link>
+            {' | '}
+            <Link to="/contact" className="text-yellow-400 hover:text-yellow-300 underline">Contact Us</Link>
           </p>
         </div>
       </div>

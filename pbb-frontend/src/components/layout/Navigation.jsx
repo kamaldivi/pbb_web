@@ -10,7 +10,7 @@ const Navigation = () => {
     { path: '/bookmarks', label: 'Bookmarks' },
     { path: '/glossary', label: 'Search' },
     { path: '/chat', label: 'Chat' },
-    { path: 'https://youtu.be/P9PzwAzbRuE', label: 'Tutorial', external: true },
+    { path: '/contact', label: 'Contact Us' },
   ];
 
   const isActive = (path) => {
